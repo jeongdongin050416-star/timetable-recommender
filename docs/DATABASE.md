@@ -1,0 +1,8 @@
+app_user
+completed_course
+course
+course_section
+section_time
+interest_area
+course_interest_area
+course_prerequisite
