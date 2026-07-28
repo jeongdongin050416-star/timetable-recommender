@@ -16,18 +16,19 @@ java {
 repositories {
     mavenCentral()
 }
-// gradle이 어떤 라이브러리르 다운받아야하는지 기록
+
+// Gradle이 내려받아 프로젝트에 연결할 라이브러리와 사용 범위를 선언한다.
 dependencies {
+    // Web은 HTTP API, Data JPA는 JPA/Hibernate 및 JDBC 연동에 사용한다.
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    //spring boot web, jpa/hibernate+JDBC 라이브러리 다운
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.flywaydb:flyway-core'
 
+    // PostgreSQL용 Flyway 지원과 JDBC 드라이버는 실행 시점에 필요하다.
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
-    //flyway, postgresql 라이브러리도 다운
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
