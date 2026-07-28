@@ -1,14 +1,28 @@
 services:
+  # Docker는 프로그램과 실행 환경을 컨테이너라는 격리된 단위로 묶어 실행한다.
+  # Docker Compose는 컨테이너의 이미지, 환경 변수, 포트, 볼륨, 네트워크 등을
+  # 하나의 YAML 파일에 정의하고 함께 관리하는 도구이다.
+  #
+  # 이 프로젝트에서는 PostgreSQL 서버 하나만 컨테이너로 실행한다.
+  # `docker compose up -d`에서 `up`은 서비스를 생성·실행하고, `-d`는
+  # 백그라운드에서 실행하라는 뜻이다.
   postgres:
+    # image는 컨테이너를 만들 원본 템플릿이다.
     image: postgres:17-alpine
+    # 컨테이너를 처음 시작할 때 PostgreSQL에 전달할 초기 설정이다.
     environment:
       POSTGRES_DB: timetable
       POSTGRES_USER: timetable
       POSTGRES_PASSWORD: timetable
+    # "호스트 포트:컨테이너 포트" 형식이다. localhost:5432 요청을 컨테이너의
+    # 5432 포트로 전달하므로 백엔드가 로컬 주소로 DB에 접속할 수 있다.
     ports:
       - "5432:5432"
+    # 컨테이너를 삭제해도 DB 데이터를 유지하도록 이름 있는 볼륨을 연결한다.
+    # 왼쪽은 볼륨 이름, 오른쪽은 PostgreSQL이 데이터를 저장하는 컨테이너 내부 경로다.
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    # 프로세스 실행 여부뿐 아니라 DB가 실제 연결을 받을 준비가 됐는지 주기적으로 확인한다.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U timetable -d timetable"]
       interval: 5s
@@ -17,3 +31,7 @@ services:
 
 volumes:
   postgres-data:
+
+# YAML에서 `key: value`는 설정값, 들여쓰기는 포함 관계, `-`는 목록을 뜻한다.
+# `.yml`과 `.yaml`은 같은 형식이다. YAML 자체가 동작하는 것이 아니라 이 파일은
+# Docker Compose가, application.yml은 Spring Boot가 읽어 의미를 부여한다.
