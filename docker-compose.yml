@@ -1,15 +1,41 @@
 services:
+# Docker: 프로그램과 그 프로그램을 실행하는데 필요한 모든 환경(설정, 라이브러리 등)을 컨테이너라는
+# 하나의 상자에 포장해주는 기술이다. 이 상자만 있으면 윈도우, 맥, 리눅스, 어디서든 다운로드받아 똑같은 환경으로 실행할 수 있음.
+
+# Docker Compose 여러 컨테이너의 이미지, 환경변수, 포트, 볼륨, 네트워크 등을
+# 하나의 YAML 파일로 정의하는 도구임.
+
+# Docker로 실행할 프로그램과 실행 조건을 기록한 설정 파일
+# 현재 프로젝트에서는 이 파일로 PostgreSQL 데이터베이스 서버 하나만 Docker 컨테이너로 실행함
+
+# 터미널에서 
+# docker compose up -d 명령을 실행하면(docker compose up: 정의된 서비스를 생성하고 실행함
+# -d는 백그라운드 실행을 의미함)
+# Docker Compose가 docker-compose.yml을 읽고 다음 작업을 수행함.
+# 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17-alpine # image 실행할 컨테이너의 원본 템플릿
+    # 전 세계 개발자들이 미리 세팅해서 올려둔 완성된 프로그램을 가져오는 것
     environment:
+    # environment: 컨테이너가 처음 켜질 때 내부에 전달해 줄 옵션값들
       POSTGRES_DB: timetable
       POSTGRES_USER: timetable
       POSTGRES_PASSWORD: timetable
     ports:
+    # 내 컴퓨터에서 이 컨테이너 안으로 접속하기 위한 문(포트)
+    # "내 컴퓨터의 포트: 컨테이너 내부의 포트"
       - "5432:5432"
+    # 만약 a:b로 설정된다고 하자.
+    # 내가 localhost::a로 내 컴퓨터 주소의 a포트로 접속한다고 치자
+    # 그러면 포트 포워딩 or NAT로 주소와 포트가 변경되어 Docker의 b포트로 연결된다.
     volumes:
+    # Docker container는 껐다 켜는 것이 자유롭지만, 삭제하면 내부 데이터도 함께 날아감.
+    # DB 컨테이너를 지웠다고 저장한 회원 정보가 날아가면 안 됨.
+    # volumes은 컨테이너 내부의 특정 폴더를 내 컴퓨터의 폴더와 동기화(공유)시키느 기능
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
+      #healthcheck: 프로그램이 그저 켜져 있는지를 넘어, 실제로 요청을 받을 준비가 완벽히 되었는지 주기적으로
+      # 찔러보는 기능
       test: ["CMD-SHELL", "pg_isready -U timetable -d timetable"]
       interval: 5s
       timeout: 5s
@@ -17,3 +43,9 @@ services:
 
 volumes:
   postgres-data:
+# .yml은 YAML 형식으로 작성한 텍스트 설정 파일임. .yaml과 .yml은 같은 형식이며,
+# 프로그램이 실행될 때 필요한 설정을 사람이 읽기 쉽게 표현하는 데 사용함.
+# key: value는 하나의 설정값, 들여쓰기는 포함 관계, -는 목록을 나타낸다.
+# YAML 자체에는 특별한 기능이 없음. Spring Boot나 Docker Compose가 읽어야 의미있음
+# application.yml(backend/src/main/resources)은 Spring Boot가 읽고
+# docker-compose.yml은 Docker Compose가 읽음

@@ -1,16 +1,92 @@
 spring:
+# springboot가 기본적으로 찾는 설정 파일의 이름은 application임.
+# 하지만 파일의 확장자는 application.properties, application.yml, application.yaml 다 지원함
+# application.yml 파일을 찾을 때 프로젝트 전체를 스캔하지 않고 정해진 특정 위치만 확인함
+# 1. 프로젝트 내부의 최상위 폴더: src/main/resources/ (우리가 가장 흔하게 쓰는 위치입니다.)
+# 2. 프로젝트 내부의 config 폴더: src/main/resources/config/
+# 3. 프로젝트 외부(실행 파일이 있는 곳)의 최상위 폴더
+# 4. 프로젝트 외부의 config 폴더
   application:
-    name: timetable-recommender
-  datasource:
+    name: timetable-recommender # application 이름 설정
+  # 프로젝트 이름표라 생각하면 됨
+  datasource: #datasource는 Spring Boot가 접속할 데이터베이스 정보를 나타냄
+    # datasource가 여러 개면 datasource.primary: datasource.secondary: 이런 식으로 하여
+    # 여러개의 db에 연결할 수 있음
     url: ${DB_URL:jdbc:postgresql://localhost:5432/timetable}
+    # ${name:default} 즉 환경 변수에 DB_URL이 있으면 그 환경변수 값을 쓰고
+    # 그 값이 없으면 뒤의 기본값을 사용한다. 
     username: ${DB_USERNAME:timetable}
+    # username, password도 마찬가지임.
     password: ${DB_PASSWORD:timetable}
+    #환경변수에 아무 값도 안 넣으면 기본적으로
+    # 주소: localhost 포트: 5432 DB이름: timetable
+    # user: timetable, password: timetable 의 DB로 접속함
   jpa:
     hibernate:
       ddl-auto: validate
+    # Hibernate: Java 객체와 관계형 데이터베이스 사이를 연결해 주는 ORM 프레임 워크
+    # ORM은 OBject-Relational Mapping의 약자. 객체 지향 프로그래밍 언어의 객체와 관계형 데이터
+    #베이스의 테이블을 자동으로 연결해주는 기술
+    # JPA: Java에서 ORM을 어떻게 사용할지 정한 표중 규칙
+    # Hibernate: JPA 규칙을 실제로 실행하는 구현체
+    # Hibernate에게 DB 테이블을 직접 만들거나 수정하지 말고, 현재 Java 엔티티와
+    # DB 테이블 구조가 맞는지만 검사해라고 지시
+    # Java entity 에 있는 필드에 대응되는 열이 DB table에 없으면 오류를 발생시킴
+    # entity 파일은 backend/src/main/java/com/example/timetablerecommender/domain
+    # 이 경로에 저장되어 있음
+    # 현재 프로젝트의 DB 관리 전략을 나타냄
     open-in-view: false
   flyway:
     enabled: true
+# Flyway는 "데이터베이스 구조 변경 내역(SQL 파일)을 코드처럼 버전별로 관리하고, 서버가 켤 때
+# 알아서 순서대로 DB에 적용해주는 도구"이다. 간단히 말하면 데이터베이스의 버전 관리 도구이다.
+# Flyway는 어떻게 동작할까?
+# 1. src/main/resources/db/migration에 SQL 파일을 버전 순서대로 만듦
+# 2. spring boot 서버가 켜질 때 Flyway가 작동하여, 현재 DB에 어디가지 적용되었는지 확인하고
+# 아직 적용되지 않은 최신 SQL파일들을 순서대로 실행함.
+#. 3. DB내부에 flyway_schema_history라는 특별한 테이블을 만들어서 어떤 버전이 성공적으로 적용되었는지 DB내부에 기록을 남김.
+# 중복으로 실행되거나 순서가 꼬이는 것을 방지하기 위함임
+# flyway:
+#   enabled: true 역할: db table을 만들고 수정하며 관리하는 작업을 flyway보고 하라는 뜻
+# 반면에 Hibernate는 java entity와 db table구조가 같은지 검사만함.
 
+# 정리:
+# Hibernate 역할: 데이터와 java 객체 간의변환
+# Flyway 역할: 데이터베이스 구조(DDL) 관리
 server:
   port: 8080
+# Spring Boot 백엔드 서버가 8080번 포트에서 요청을 받도록 설정을 지정함.
+# 따라서 현재 백엔드 서버의 주소는 http://localhost:8080이 됨.
+
+# Spring Boot는 실행될 때 application.yml, application.yaml, application.properties 같은
+# 설정 파일을 자동으로 찾아 읽음. 
+
+# db와 entity 연결과정
+# 1. Spring Boot 실행
+# 2. @Entity가 붙은 클래스 검색
+# 3. Course는 course 테이블, AppUser는 app-user 테이블이라고 mapping 정보 생성
+# 4. application.yml의 정보로 PostgreSQL 접속
+# 5. 실제 DB 테이블 구조 조회
+# 6. ddl-auto: validate에 따라 entity mapping과 실제 db schema 비교
+# 7. 문제가 없으면 EntityManagerFactory 생성
+# 8. Repository나 EntityManger를 통해 DB 사용
+
+# EntityManagerFactory: 데이터베이스와 연결하기 위한 모든 준비를 마치고, 실제
+# 일을 할 EntityManger를 찍어내는 공장
+# 생성 비용이 비싸므로 스프링 부트 서버가 켜질 때 전체 시스템에서 딱 하나만 생성해 둠
+# EntityManager: 자바 코드로 데이터를 저장하거나 찾으려고 할 때, 복잡한 SQL query문을
+# 직접 작성하는 대신 이 매니저에게 부탁하면 알아서 db에 퀴리를 날려줌
+# EntityManager의 핵심 역할 3가지
+# 1. CRUD 처리
+# 개발자가 자바 코드로 명령을 내리면, EntityManager가 이를 적절한 SQL query로
+# 번역해서 DB에 전달함
+# ex: 저장: em.persist(user); (DB에 INSERT 실행)
+# 조회: em.find(User.class, 1L); (DB에 SELECT 실행)
+# 삭제: em.remove(user); (DB에 DELETE 실행)
+# 2. 임시 저장소 캐시 운영
+# 똑같은 데이터를 2 번 조회하면 캐시를 활용해 데이터를 바로 꺼내줌
+# 매니저가 대기실에서 변경된 점을 dirty checking하여 db에 update 명령을 날려줌
+# 3. 패러다임 불일치 해결
+# java는 data와 행동을 묶은 객체 주임이고, DB는 표 중심이라 서로 구조가 완전히 다름. EntityManager가 이 둘
+# 사이의 모양 차리르 메꿔주어 java 개발자가 마치 일반적인 자바 리스트에 데이터를 넣고 빼는 것처럼
+# 편하게 DB를 다룰 수 있게 해줌.
