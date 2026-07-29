@@ -28,6 +28,13 @@ server:
   # 백엔드가 HTTP 요청을 받을 포트이며 기본 주소는 http://localhost:8080이다.
   port: 8080
 
+app:
+  csv-import:
+    enabled: false
+    course-resource: classpath:data/course.csv
+    course-section-resource: classpath:data/course_section.csv
+    section-time-resource: classpath:data/section_time.csv
+
 # ORM(Object-Relational Mapping)은 객체와 관계형 DB 테이블 사이를 연결하는 기술이다.
 # JPA는 Java ORM의 표준 규칙이고 Hibernate는 그 규칙을 구현한 프레임워크다.
 # 이 프로젝트에서는 Flyway가 DDL(스키마 변경)을 관리하고 Hibernate는 객체-데이터 변환과

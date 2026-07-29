@@ -1,0 +1,4 @@
+courseCode,name,credits,courseType
+CS204,이산구조,3,MAJOR_REQUIRED
+CS300,알고리즘 개론,3,MAJOR_REQUIRED
+CS360,데이터베이스 개론,3,MAJOR_ELECTIVE
