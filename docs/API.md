@@ -1,33 +1,211 @@
-# API
+# 백엔드 API
 
-## 공통 정보
+기본 주소는 `http://localhost:8080`이며 현재 모든 요청은 인증 없이 허용됩니다. 모든 성공과
+실패 응답은 다음 최상위 구조를 사용합니다.
 
-- 기본 백엔드 주소: `http://localhost:8080`
-- 현재 Security 설정: 모든 요청 허용
-- 응답 형식: JSON
+```json
+{"success":true,"data":{},"error":null}
+```
 
-> 모든 요청 허용 설정은 초기 개발 단계의 임시 설정입니다. 인증 기능을 구현할 때 변경해야
-> 합니다.
+```json
+{"success":false,"data":null,"error":{"code":"ERROR_CODE","message":"오류 메시지","fieldErrors":null}}
+```
+
+Validation 오류는 `INVALID_REQUEST`이며 `fieldErrors`에 필드별 메시지가 들어갑니다. 예상하지
+못한 오류는 내부 구현을 노출하지 않고 `INTERNAL_SERVER_ERROR`로 응답합니다.
 
 ## 상태 확인
 
 ### `GET /api/health`
 
-백엔드가 HTTP 요청에 응답할 수 있는지 확인합니다.
+- 성공: `200 OK`
+- 요청 값: 없음
+- 멱등: 예
 
-```bash
-curl http://localhost:8080/api/health
+```json
+{"success":true,"data":{"status":"ok"},"error":null}
 ```
 
-정상 응답:
+```bash
+curl "http://localhost:8080/api/health"
+```
+
+## 회원가입
+
+### `POST /api/auth/signup`
+
+- Body: `email`, `password`, `name` 모두 필수
+- Validation: 올바른 이메일, 비밀번호 8자 이상, 공백이 아닌 이름
+- 성공: `201 Created`
+- 실패: `400 INVALID_REQUEST`, `409 DUPLICATE_USER`
+- 멱등: 아니요. 같은 이메일의 두 번째 요청은 409입니다.
+- 비밀번호는 BCrypt 해시로만 저장되며 응답에 포함되지 않습니다.
+
+```bash
+curl -X POST "http://localhost:8080/api/auth/signup" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123!","name":"홍길동"}'
+```
+
+성공 응답:
+
+```json
+{"success":true,"data":{"userId":1,"email":"user@example.com","name":"홍길동"},"error":null}
+```
+
+Validation 실패 예:
+
+```bash
+curl -X POST "http://localhost:8080/api/auth/signup" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"invalid","password":"short","name":""}'
+```
+
+```json
+{"success":false,"data":null,"error":{"code":"INVALID_REQUEST","message":"요청 값이 올바르지 않습니다.","fieldErrors":{"email":"올바른 이메일 형식이어야 합니다.","password":"비밀번호는 8자 이상이어야 합니다.","name":"이름은 필수입니다."}}}
+```
+
+## 로그인
+
+### `POST /api/auth/login`
+
+- Body: `email`, `password` 필수
+- 성공: `200 OK`
+- 실패: `400 INVALID_REQUEST`, `401 INVALID_CREDENTIALS`
+- 이메일 미존재와 비밀번호 불일치는 같은 오류로 응답합니다.
+- JWT, 토큰, 세션, 쿠키는 발급하지 않고 자격 증명만 검증합니다.
+
+```bash
+curl -X POST "http://localhost:8080/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123!"}'
+```
+
+```json
+{"success":true,"data":{"userId":1,"email":"user@example.com","name":"홍길동"},"error":null}
+```
+
+로그인 실패:
+
+```bash
+curl -X POST "http://localhost:8080/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"wrong-password"}'
+```
+
+```json
+{"success":false,"data":null,"error":{"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호가 올바르지 않습니다.","fieldErrors":null}}
+```
+
+## 이수 과목 목록
+
+### `GET /api/users/{userId}/completed-courses`
+
+- Path: `userId` 사용자 ID
+- 성공: `200 OK`; 과목 코드 오름차순, 없으면 빈 배열
+- 실패: `404 USER_NOT_FOUND`
+- 멱등: 예
+
+```bash
+curl "http://localhost:8080/api/users/1/completed-courses"
+```
+
+```json
+{"success":true,"data":{"userId":1,"courses":[{"courseCode":"CS101","name":"프로그래밍 기초","credits":3}]},"error":null}
+```
+
+존재하지 않는 사용자:
+
+```bash
+curl "http://localhost:8080/api/users/999999/completed-courses"
+```
+
+```json
+{"success":false,"data":null,"error":{"code":"USER_NOT_FOUND","message":"사용자를 찾을 수 없습니다.","fieldErrors":null}}
+```
+
+## 이수 과목 추가
+
+### `PUT /api/users/{userId}/completed-courses/{courseCode}`
+
+- Path: `userId`, `courseCode`(예: `CS101`)
+- 성공: 항상 `200 OK`
+- 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
+- 멱등: 예. 이미 등록된 관계는 추가하지 않으며 DB 유니크 제약도 중복을 방지합니다.
+
+```bash
+curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
+```
+
+```json
+{"success":true,"data":{"userId":1,"courseCode":"CS101","completed":true},"error":null}
+```
+
+## 이수 과목 삭제
+
+### `DELETE /api/users/{userId}/completed-courses/{courseCode}`
+
+- Path: `userId`, `courseCode`(예: `CS101`)
+- 성공: 항상 `200 OK`
+- 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
+- 멱등: 예. 관계가 없어도 성공합니다.
+
+```bash
+curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
+```
+
+```json
+{"success":true,"data":{"userId":1,"courseCode":"CS101","completed":false},"error":null}
+```
+
+## 추천 과목
+
+### `GET /api/users/{userId}/recommended-courses`
+
+- Path: `userId`
+- Query: `courseCount` 필수, 1~20
+- Query: `interestedAreaIds`, `excludedAreaIds` 선택; 쉼표로 구분한 관심 분야 ID
+- 성공: `200 OK`; 후보가 부족하면 가능한 개수만 반환
+- 실패: `400 INVALID_REQUEST`, `400 CONFLICTING_INTEREST_AREA`,
+  `404 USER_NOT_FOUND`, `404 INTEREST_AREA_NOT_FOUND`
+- 멱등: 예
+
+이미 이수한 과목, 제외 분야 과목, 필수 선수 과목을 모두 이수하지 않은 과목을 제외합니다.
+관심 분야 일치당 100점, 전공필수 과목은 10점을 부여해 점수 내림차순으로 정렬하고 동점이면
+과목 코드 오름차순으로 정렬합니다. `RECOMMENDED` 관계는 필수 선수 조건으로 취급하지 않습니다.
+
+```bash
+curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=5&interestedAreaIds=1,2&excludedAreaIds=3"
+```
 
 ```json
 {
-  "status": "ok"
+  "success": true,
+  "data": {
+    "userId": 1,
+    "requestedCourseCount": 5,
+    "returnedCourseCount": 1,
+    "courses": [{
+      "courseCode": "CS201",
+      "name": "데이터 구조",
+      "credits": 3,
+      "score": 110,
+      "interestAreas": [{"interestAreaId": 1, "name": "DATA_SCIENCE"}],
+      "reasons": ["관심 분야 1개 일치", "전공필수 과목"]
+    }]
+  },
+  "error": null
 }
 ```
 
-## 구현 예정 API
+유효성 검증 실패:
 
-MVP 요구사항에 따라 회원가입·로그인, 이수 과목 조회·추가·삭제, 관심 분야 저장, 추천 조건
-입력 및 시간표 추천 API가 필요합니다. 구체적인 경로와 요청·응답 명세는 구현할 때 확정합니다.
+```bash
+curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=0"
+```
+
+```json
+{"success":false,"data":null,"error":{"code":"INVALID_REQUEST","message":"요청 값이 올바르지 않습니다.","fieldErrors":{"courseCount":"1 이상이어야 합니다."}}}
+```
