@@ -18,7 +18,7 @@ import jakarta.validation.constraints.Min;
 
 @Validated
 @RestController
-@RequestMapping("/api/users/{userId}/recommended-courses")
+@RequestMapping("/api/users/{userId}/recommended-timetables")
 public class RecommendationController {
 
     private final RecommendationService recommendationService;
@@ -31,10 +31,10 @@ public class RecommendationController {
     ApiResponse<RecommendationResponse> getRecommendedCourses(
             @PathVariable Long userId,
             @RequestParam @Min(value = 1, message = "1 이상이어야 합니다.")
-            @Max(value = 20, message = "20 이하여야 합니다.") int courseCount,
+            @Max(value = 20, message = "20 이하여야 합니다.") int targetCourseCount,
             @RequestParam(required = false) List<Long> interestedAreaIds,
-            @RequestParam(required = false) List<Long> excludedAreaIds) {
+            @RequestParam(required = false) List<Long> uninterestedAreaIds) {
         return ApiResponse.success(recommendationService.recommend(
-                userId, courseCount, interestedAreaIds, excludedAreaIds));
+                userId, targetCourseCount, interestedAreaIds, uninterestedAreaIds));
     }
 }
