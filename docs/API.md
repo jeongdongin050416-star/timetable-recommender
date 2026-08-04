@@ -160,24 +160,29 @@ curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
 {"success":true,"data":{"userId":1,"courseCode":"CS101","completed":false},"error":null}
 ```
 
-## 추천 과목
+## 추천 시간표 조합
 
-### `GET /api/users/{userId}/recommended-courses`
+### `GET /api/users/{userId}/recommended-timetables`
 
 - Path: `userId`
-- Query: `courseCount` 필수, 1~20
-- Query: `interestedAreaIds`, `excludedAreaIds` 선택; 쉼표로 구분한 관심 분야 ID
-- 성공: `200 OK`; 후보가 부족하면 가능한 개수만 반환
-- 실패: `400 INVALID_REQUEST`, `400 CONFLICTING_INTEREST_AREA`,
-  `404 USER_NOT_FOUND`, `404 INTEREST_AREA_NOT_FOUND`
+- Query: `targetCourseCount` 필수, 1~20. 각 시간표 조합에 포함할 정확한 과목 수
+- Query: `interestedAreaIds`, `uninterestedAreaIds` 선택; 쉼표로 구분한 관심 분야 ID
+- 성공: `200 OK`; 정확한 과목 수로 만들 수 없으면 `timetable`을 `null`로 반환
+- 실패: `400 INVALID_REQUEST`, `404 USER_NOT_FOUND`, `404 INTEREST_AREA_NOT_FOUND`
 - 멱등: 예
 
-이미 이수한 과목, 제외 분야 과목, 필수 선수 과목을 모두 이수하지 않은 과목을 제외합니다.
-관심 분야 일치당 100점, 전공필수 과목은 10점을 부여해 점수 내림차순으로 정렬하고 동점이면
-과목 코드 오름차순으로 정렬합니다. `RECOMMENDED` 관계는 필수 선수 조건으로 취급하지 않습니다.
+이미 이수한 과목은 후보에서 제외합니다. DFS 백트래킹으로 서로 다른 과목마다 분반 하나를
+선택하며 모든 수업 시간이 충돌하지 않는 정확히 `targetCourseCount`개 과목의 조합을 만듭니다.
+점수가 가장 높은 시간표 조합 하나만 반환하며, 동점은 과목 코드와 분반 키 순으로 결정합니다.
+
+- 관심 분야에 속하는 과목: 과목당 `+30`
+- 미관심 분야에 속하는 과목: 과목당 `-15`
+- 전공필수: 과목당 `+20`
+- `RECOMMENDED` 선수 관계: 이수했으면 관계당 `+20`, 미이수면 `-10`
+- 같은 요일의 연속 수업 사이 공강: 30분당 `-1`
 
 ```bash
-curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=5&interestedAreaIds=1,2&excludedAreaIds=3"
+curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount=3&interestedAreaIds=1,2&uninterestedAreaIds=3"
 ```
 
 ```json
@@ -185,16 +190,34 @@ curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=5&intere
   "success": true,
   "data": {
     "userId": 1,
-    "requestedCourseCount": 5,
-    "returnedCourseCount": 1,
-    "courses": [{
-      "courseCode": "CS201",
-      "name": "데이터 구조",
-      "credits": 3,
-      "score": 110,
-      "interestAreas": [{"interestAreaId": 1, "name": "DATA_SCIENCE"}],
-      "reasons": ["관심 분야 1개 일치", "전공필수 과목"]
-    }]
+    "targetCourseCount": 3,
+    "timetable": {
+      "score": 69,
+      "courseCount": 3,
+      "courses": [
+        {
+          "courseCode": "CS201",
+          "name": "데이터 구조",
+          "credits": 3,
+          "sectionKey": "CS201-2026-FALL-A",
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+        },
+        {
+          "courseCode": "CS300",
+          "name": "알고리즘 개론",
+          "credits": 3,
+          "sectionKey": "CS300-2026-FALL-A",
+          "meetingTimes": [{"dayOfWeek":"TUESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+        },
+        {
+          "courseCode": "CS360",
+          "name": "데이터베이스 개론",
+          "credits": 3,
+          "sectionKey": "CS360-2026-FALL-A",
+          "meetingTimes": [{"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+        }
+      ]
+    }
   },
   "error": null
 }
@@ -203,9 +226,9 @@ curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=5&intere
 유효성 검증 실패:
 
 ```bash
-curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=0"
+curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount=0"
 ```
 
 ```json
-{"success":false,"data":null,"error":{"code":"INVALID_REQUEST","message":"요청 값이 올바르지 않습니다.","fieldErrors":{"courseCount":"1 이상이어야 합니다."}}}
+{"success":false,"data":null,"error":{"code":"INVALID_REQUEST","message":"요청 값이 올바르지 않습니다.","fieldErrors":{"targetCourseCount":"1 이상이어야 합니다."}}}
 ```

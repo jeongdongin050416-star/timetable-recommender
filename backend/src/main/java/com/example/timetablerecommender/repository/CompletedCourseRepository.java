@@ -20,4 +20,7 @@ public interface CompletedCourseRepository extends JpaRepository<CompletedCourse
 
     @Query("select completed.course.id from CompletedCourse completed where completed.user.id = :userId")
     Set<Long> findCourseIdsByUserId(Long userId);
+
+    @Query("select completed.course.courseCode from CompletedCourse completed where completed.user.id = :userId")
+    Set<String> findCourseCodesByUserId(Long userId);
 }

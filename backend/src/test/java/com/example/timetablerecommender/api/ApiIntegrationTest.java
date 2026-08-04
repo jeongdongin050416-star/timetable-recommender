@@ -18,19 +18,26 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
 import com.example.timetablerecommender.domain.AppUser;
 import com.example.timetablerecommender.domain.CompletedCourse;
 import com.example.timetablerecommender.domain.Course;
 import com.example.timetablerecommender.domain.CourseInterestArea;
 import com.example.timetablerecommender.domain.CoursePrerequisite;
+import com.example.timetablerecommender.domain.CourseSection;
 import com.example.timetablerecommender.domain.InterestArea;
 import com.example.timetablerecommender.domain.RelationType;
+import com.example.timetablerecommender.domain.SectionTime;
 import com.example.timetablerecommender.repository.AppUserRepository;
 import com.example.timetablerecommender.repository.CompletedCourseRepository;
 import com.example.timetablerecommender.repository.CourseInterestAreaRepository;
 import com.example.timetablerecommender.repository.CoursePrerequisiteRepository;
 import com.example.timetablerecommender.repository.CourseRepository;
+import com.example.timetablerecommender.repository.CourseSectionRepository;
 import com.example.timetablerecommender.repository.InterestAreaRepository;
+import com.example.timetablerecommender.repository.SectionTimeRepository;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:api-test;MODE=PostgreSQL;NON_KEYWORDS=YEAR;DB_CLOSE_DELAY=-1",
@@ -58,10 +65,16 @@ class ApiIntegrationTest {
     @Autowired
     private InterestAreaRepository interestAreaRepository;
     @Autowired
+    private CourseSectionRepository sectionRepository;
+    @Autowired
+    private SectionTimeRepository sectionTimeRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void cleanData() {
+        sectionTimeRepository.deleteAll();
+        sectionRepository.deleteAll();
         prerequisiteRepository.deleteAll();
         courseInterestAreaRepository.deleteAll();
         completedCourseRepository.deleteAll();
@@ -195,20 +208,24 @@ class ApiIntegrationTest {
         completedCourseRepository.save(new CompletedCourse(user, completed));
         courseInterestAreaRepository.save(new CourseInterestArea(interested, theory));
         courseInterestAreaRepository.save(new CourseInterestArea(excluded, security));
-        prerequisiteRepository.save(new CoursePrerequisite(required, completed, RelationType.PREREQUISITE));
-        prerequisiteRepository.save(new CoursePrerequisite(unmet, missingPrerequisite, RelationType.PREREQUISITE));
+        prerequisiteRepository.save(new CoursePrerequisite(required, completed, RelationType.RECOMMENDED));
+        prerequisiteRepository.save(new CoursePrerequisite(unmet, missingPrerequisite, RelationType.RECOMMENDED));
+        addSection(interested, "A", DayOfWeek.MONDAY, "09:00", "10:00");
+        addSection(required, "A", DayOfWeek.TUESDAY, "09:00", "10:00");
+        addSection(excluded, "A", DayOfWeek.WEDNESDAY, "09:00", "10:00");
+        addSection(unmet, "A", DayOfWeek.THURSDAY, "09:00", "10:00");
 
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", user.getId())
-                        .param("courseCount", "2")
+        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+                        .param("targetCourseCount", "2")
                         .param("interestedAreaIds", theory.getId().toString())
-                        .param("excludedAreaIds", security.getId().toString()))
+                        .param("uninterestedAreaIds", security.getId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.requestedCourseCount").value(2))
-                .andExpect(jsonPath("$.data.returnedCourseCount").value(2))
-                .andExpect(jsonPath("$.data.courses[0].courseCode").value("CS200"))
-                .andExpect(jsonPath("$.data.courses[0].score").value(100))
-                .andExpect(jsonPath("$.data.courses[1].courseCode").value("CS300"))
-                .andExpect(jsonPath("$.data.courses[1].score").value(10));
+                .andExpect(jsonPath("$.data.targetCourseCount").value(2))
+                .andExpect(jsonPath("$.data.timetable.score").value(70))
+                .andExpect(jsonPath("$.data.timetable.courseCount").value(2))
+                .andExpect(jsonPath("$.data.timetable.courses.length()").value(2))
+                .andExpect(jsonPath("$.data.timetable.courses[0].courseCode").value("CS200"))
+                .andExpect(jsonPath("$.data.timetable.courses[1].courseCode").value("CS300"));
     }
 
     @Test
@@ -216,27 +233,21 @@ class ApiIntegrationTest {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
         InterestArea theory = interestAreaRepository.findByName("THEORY").orElseThrow();
 
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", user.getId())
-                        .param("courseCount", "0"))
+        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+                        .param("targetCourseCount", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.error.fieldErrors.courseCount").exists());
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", user.getId())
-                        .param("courseCount", "21"))
+                .andExpect(jsonPath("$.error.fieldErrors.targetCourseCount").exists());
+        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+                        .param("targetCourseCount", "21"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", user.getId())
-                        .param("courseCount", "1")
-                        .param("interestedAreaIds", theory.getId().toString())
-                        .param("excludedAreaIds", theory.getId().toString()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("CONFLICTING_INTEREST_AREA"));
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", user.getId())
-                        .param("courseCount", "1")
+        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+                        .param("targetCourseCount", "1")
                         .param("interestedAreaIds", "999999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("INTEREST_AREA_NOT_FOUND"));
-        mockMvc.perform(get("/api/users/{userId}/recommended-courses", 999999L)
-                        .param("courseCount", "1"))
+        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", 999999L)
+                        .param("targetCourseCount", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
     }
@@ -247,5 +258,17 @@ class ApiIntegrationTest {
                         .content("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("INVALID_CREDENTIALS"));
+    }
+
+    private void addSection(
+            Course course,
+            String sectionNumber,
+            DayOfWeek day,
+            String start,
+            String end) {
+        CourseSection section = sectionRepository.save(
+                new CourseSection(course, 2026, "FALL", sectionNumber));
+        sectionTimeRepository.save(new SectionTime(
+                section, day, LocalTime.parse(start), LocalTime.parse(end)));
     }
 }
