@@ -140,10 +140,11 @@ class ApiIntegrationTest {
         Course later = courseRepository.save(new Course("CS200", "나중 과목", 3, "MAJOR_ELECTIVE"));
         Course earlier = courseRepository.save(new Course("CS100", "먼저 과목", 3, "MAJOR_REQUIRED"));
 
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseId}", user.getId(), later.getId()))
+        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.courseCode").value("CS200"))
                 .andExpect(jsonPath("$.data.completed").value(true));
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseId}", user.getId(), later.getId()))
+        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
                 .andExpect(status().isOk());
         completedCourseRepository.save(new CompletedCourse(user, earlier));
         assertThat(completedCourseRepository.count()).isEqualTo(2);
@@ -153,10 +154,10 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.data.courses[0].courseCode").value("CS100"))
                 .andExpect(jsonPath("$.data.courses[1].courseCode").value("CS200"));
 
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseId}", user.getId(), later.getId()))
+        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.completed").value(false));
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseId}", user.getId(), later.getId()))
+        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
                 .andExpect(status().isOk());
         assertThat(completedCourseRepository.existsByUserIdAndCourseId(user.getId(), later.getId())).isFalse();
     }
@@ -172,10 +173,10 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/users/{userId}/completed-courses", 999999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseId}", 999999L, course.getId()))
+        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", 999999L, course.getCourseCode()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseId}", user.getId(), 999999L))
+        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), "UNKNOWN"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("COURSE_NOT_FOUND"));
     }

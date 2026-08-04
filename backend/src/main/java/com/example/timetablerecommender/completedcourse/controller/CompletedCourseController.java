@@ -27,15 +27,15 @@ public class CompletedCourseController {
         return ApiResponse.success(completedCourseService.getCompletedCourses(userId));
     }
 
-    @PutMapping("/{courseId}")
+    @PutMapping("/{courseCode}")
     ApiResponse<CompletedCourseStatusResponse> addCompletedCourse(
-            @PathVariable Long userId, @PathVariable Long courseId) {
-        return ApiResponse.success(completedCourseService.addCompletedCourse(userId, courseId));
+            @PathVariable Long userId, @PathVariable String courseCode) {
+        return ApiResponse.success(completedCourseService.addCompletedCourse(userId, courseCode));
     }
 
-    @DeleteMapping("/{courseId}")
+    @DeleteMapping("/{courseCode}")
     ApiResponse<CompletedCourseStatusResponse> deleteCompletedCourse(
-            @PathVariable Long userId, @PathVariable Long courseId) {
-        return ApiResponse.success(completedCourseService.deleteCompletedCourse(userId, courseId));
+            @PathVariable Long userId, @PathVariable String courseCode) {
+        return ApiResponse.success(completedCourseService.deleteCompletedCourse(userId, courseCode));
     }
 }

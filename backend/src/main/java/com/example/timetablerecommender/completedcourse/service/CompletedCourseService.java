@@ -45,39 +45,40 @@ public class CompletedCourseService {
                 .map(completed -> {
                     Course course = completed.getCourse();
                     return new CompletedCourseItemResponse(
-                            course.getId(), course.getCourseCode(), course.getName(), course.getCredits());
+                            course.getCourseCode(), course.getName(), course.getCredits());
                 })
                 .toList();
         return new CompletedCourseListResponse(userId, courses);
     }
 
     @Transactional
-    public CompletedCourseStatusResponse addCompletedCourse(Long userId, Long courseId) {
+    public CompletedCourseStatusResponse addCompletedCourse(Long userId, String courseCode) {
         AppUser user = requireUser(userId);
-        Course course = requireCourse(courseId);
-        if (!completedCourseRepository.existsByUserIdAndCourseId(userId, courseId)) {
+        Course course = requireCourse(courseCode);
+        if (!completedCourseRepository.existsByUserIdAndCourseId(userId, course.getId())) {
             try {
                 completedCourseWriter.insert(user, course);
             } catch (DataIntegrityViolationException ignored) {
                 // The database unique constraint makes a concurrent identical PUT idempotent.
             }
         }
-        return new CompletedCourseStatusResponse(userId, courseId, true);
+        return new CompletedCourseStatusResponse(userId, course.getCourseCode(), true);
     }
 
     @Transactional
-    public CompletedCourseStatusResponse deleteCompletedCourse(Long userId, Long courseId) {
+    public CompletedCourseStatusResponse deleteCompletedCourse(Long userId, String courseCode) {
         requireUser(userId);
-        requireCourse(courseId);
-        completedCourseRepository.deleteByUserIdAndCourseId(userId, courseId);
-        return new CompletedCourseStatusResponse(userId, courseId, false);
+        Course course = requireCourse(courseCode);
+        completedCourseRepository.deleteByUserIdAndCourseId(userId, course.getId());
+        return new CompletedCourseStatusResponse(userId, course.getCourseCode(), false);
     }
 
     private AppUser requireUser(Long userId) {
         return userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
     }
 
-    private Course requireCourse(Long courseId) {
-        return courseRepository.findById(courseId).orElseThrow(CourseNotFoundException::new);
+    private Course requireCourse(String courseCode) {
+        String normalizedCode = courseCode.trim().toUpperCase(java.util.Locale.ROOT);
+        return courseRepository.findByCourseCode(normalizedCode).orElseThrow(CourseNotFoundException::new);
     }
 }

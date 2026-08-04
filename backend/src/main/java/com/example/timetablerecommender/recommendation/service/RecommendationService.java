@@ -107,7 +107,6 @@ public class RecommendationService {
                     .sorted(Comparator.comparing(InterestAreaResponse::interestAreaId))
                     .toList();
             recommendations.add(new RecommendedCourseResponse(
-                    course.getId(),
                     course.getCourseCode(),
                     course.getName(),
                     course.getCredits(),

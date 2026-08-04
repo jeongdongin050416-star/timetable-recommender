@@ -111,7 +111,7 @@ curl "http://localhost:8080/api/users/1/completed-courses"
 ```
 
 ```json
-{"success":true,"data":{"userId":1,"courses":[{"courseId":10,"courseCode":"CS101","name":"프로그래밍 기초","credits":3}]},"error":null}
+{"success":true,"data":{"userId":1,"courses":[{"courseCode":"CS101","name":"프로그래밍 기초","credits":3}]},"error":null}
 ```
 
 존재하지 않는 사용자:
@@ -126,38 +126,38 @@ curl "http://localhost:8080/api/users/999999/completed-courses"
 
 ## 이수 과목 추가
 
-### `PUT /api/users/{userId}/completed-courses/{courseId}`
+### `PUT /api/users/{userId}/completed-courses/{courseCode}`
 
-- Path: `userId`, `courseId`
+- Path: `userId`, `courseCode`(예: `CS101`)
 - 성공: 항상 `200 OK`
 - 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
 - 멱등: 예. 이미 등록된 관계는 추가하지 않으며 DB 유니크 제약도 중복을 방지합니다.
 
 ```bash
-curl -X PUT "http://localhost:8080/api/users/1/completed-courses/10"
-curl -X PUT "http://localhost:8080/api/users/1/completed-courses/10"
+curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
 ```
 
 ```json
-{"success":true,"data":{"userId":1,"courseId":10,"completed":true},"error":null}
+{"success":true,"data":{"userId":1,"courseCode":"CS101","completed":true},"error":null}
 ```
 
 ## 이수 과목 삭제
 
-### `DELETE /api/users/{userId}/completed-courses/{courseId}`
+### `DELETE /api/users/{userId}/completed-courses/{courseCode}`
 
-- Path: `userId`, `courseId`
+- Path: `userId`, `courseCode`(예: `CS101`)
 - 성공: 항상 `200 OK`
 - 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
 - 멱등: 예. 관계가 없어도 성공합니다.
 
 ```bash
-curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/10"
-curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/10"
+curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
 ```
 
 ```json
-{"success":true,"data":{"userId":1,"courseId":10,"completed":false},"error":null}
+{"success":true,"data":{"userId":1,"courseCode":"CS101","completed":false},"error":null}
 ```
 
 ## 추천 과목
@@ -188,7 +188,6 @@ curl "http://localhost:8080/api/users/1/recommended-courses?courseCount=5&intere
     "requestedCourseCount": 5,
     "returnedCourseCount": 1,
     "courses": [{
-      "courseId": 20,
       "courseCode": "CS201",
       "name": "데이터 구조",
       "credits": 3,
