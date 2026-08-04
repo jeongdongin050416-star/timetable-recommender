@@ -34,6 +34,8 @@ app:
     course-resource: classpath:data/course.csv
     course-section-resource: classpath:data/course_section.csv
     section-time-resource: classpath:data/section_time.csv
+    course-prerequisite-resource: classpath:data/course_prerequisite.csv
+    course-interest-area-resource: classpath:data/course_interest_area.csv
 
 # ORM(Object-Relational Mapping)은 객체와 관계형 DB 테이블 사이를 연결하는 기술이다.
 # JPA는 Java ORM의 표준 규칙이고 Hibernate는 그 규칙을 구현한 프레임워크다.

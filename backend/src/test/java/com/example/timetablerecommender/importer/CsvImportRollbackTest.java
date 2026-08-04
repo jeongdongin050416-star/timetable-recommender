@@ -19,7 +19,9 @@ import com.example.timetablerecommender.repository.CourseSectionRepository;
         "app.csv-import.enabled=false",
         "app.csv-import.course-resource=classpath:import/rollback/course.csv",
         "app.csv-import.course-section-resource=classpath:import/rollback/course_section.csv",
-        "app.csv-import.section-time-resource=classpath:import/rollback/section_time.csv"
+        "app.csv-import.section-time-resource=classpath:import/rollback/section_time.csv",
+        "app.csv-import.course-prerequisite-resource=classpath:import/rollback/course_prerequisite.csv",
+        "app.csv-import.course-interest-area-resource=classpath:import/rollback/course_interest_area.csv"
 })
 @ActiveProfiles("test")
 class CsvImportRollbackTest {
