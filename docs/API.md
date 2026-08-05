@@ -97,6 +97,23 @@ curl -X POST "http://localhost:8080/api/auth/login" \
 {"success":false,"data":null,"error":{"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호가 올바르지 않습니다.","fieldErrors":null}}
 ```
 
+## 전체 과목 목록
+
+### `GET /api/courses`
+
+- 성공: `200 OK`; 과목 코드 오름차순, 없으면 빈 배열
+- 요청 값: 없음
+- 멱등: 예
+- DB에 CSV import로 적재된 과목을 응답 DTO로 반환합니다.
+
+```bash
+curl "http://localhost:8080/api/courses"
+```
+
+```json
+{"success":true,"data":{"courses":[{"courseCode":"CS101","name":"프로그래밍 기초","credits":2}]},"error":null}
+```
+
 ## 이수 과목 목록
 
 ### `GET /api/users/{userId}/completed-courses`
@@ -200,21 +217,24 @@ curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount
           "name": "데이터 구조",
           "credits": 3,
           "sectionKey": "CS201-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"}, 
+            {"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         },
         {
           "courseCode": "CS300",
           "name": "알고리즘 개론",
           "credits": 3,
           "sectionKey": "CS300-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"TUESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"TUESDAY","startTime":"09:00:00","endTime":"10:30:00"},
+            {"dayOfWeek":"THURSDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         },
         {
           "courseCode": "CS360",
           "name": "데이터베이스 개론",
           "credits": 3,
           "sectionKey": "CS360-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"},
+            {"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         }
       ]
     }

@@ -12,6 +12,8 @@ import com.example.timetablerecommender.domain.Course;
 public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findByCourseCode(String courseCode);
 
+    List<Course> findAllByOrderByCourseCodeAsc();
+
     @Query("""
             select course
             from Course course
