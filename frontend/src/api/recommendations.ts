@@ -2,7 +2,7 @@ import type { RecommendationParams, RecommendationResult } from '../types'
 import { apiRequest } from './client'
 
 export const recommendationsApi = {
-  get: (userId: number, params: RecommendationParams) => {
+  get: (userId: number, params: RecommendationParams, signal?: AbortSignal) => {
     const query = new URLSearchParams({
       targetCourseCount: String(params.targetCourseCount),
     })
@@ -16,7 +16,7 @@ export const recommendationsApi = {
 
     return apiRequest<RecommendationResult>(
       `/api/users/${encodeURIComponent(userId)}/recommended-timetables?${query}`,
+      { signal },
     )
   },
 }
-
