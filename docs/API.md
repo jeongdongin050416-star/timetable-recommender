@@ -200,21 +200,24 @@ curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount
           "name": "데이터 구조",
           "credits": 3,
           "sectionKey": "CS201-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"}, 
+            {"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         },
         {
           "courseCode": "CS300",
           "name": "알고리즘 개론",
           "credits": 3,
           "sectionKey": "CS300-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"TUESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"TUESDAY","startTime":"09:00:00","endTime":"10:30:00"},
+            {"dayOfWeek":"THURSDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         },
         {
           "courseCode": "CS360",
           "name": "데이터베이스 개론",
           "credits": 3,
           "sectionKey": "CS360-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"},
+            {"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
         }
       ]
     }
