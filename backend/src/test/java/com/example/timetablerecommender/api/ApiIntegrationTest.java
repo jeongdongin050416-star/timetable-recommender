@@ -176,6 +176,28 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void coursesAreReturnedAsSortedDtosAndMayBeEmpty() throws Exception {
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.courses").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist());
+
+        courseRepository.save(new Course("CS300", "알고리즘 개론", 3, "MAJOR_REQUIRED"));
+        courseRepository.save(new Course("CS101", "프로그래밍 기초", 2, "BASIC_REQUIRED"));
+
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.courses.length()").value(2))
+                .andExpect(jsonPath("$.data.courses[0].courseCode").value("CS101"))
+                .andExpect(jsonPath("$.data.courses[0].name").value("프로그래밍 기초"))
+                .andExpect(jsonPath("$.data.courses[0].credits").value(2))
+                .andExpect(jsonPath("$.data.courses[0].id").doesNotExist())
+                .andExpect(jsonPath("$.data.courses[0].courseType").doesNotExist())
+                .andExpect(jsonPath("$.data.courses[1].courseCode").value("CS300"));
+    }
+
+    @Test
     void completedCourseEndpointsReturnNotFoundAndEmptyList() throws Exception {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
         Course course = courseRepository.save(new Course("CS100", "과목", 3, "MAJOR_REQUIRED"));

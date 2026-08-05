@@ -8,6 +8,12 @@ import {
 import { getTimetableProblem, TimetableGrid } from './TimetableGrid'
 import './timetable.css'
 
+interface TimetablePageProps {
+  userId: number
+  isRecommendationStale: boolean
+  onRecommendationChange: (timetable: Timetable | null) => void
+}
+
 type PageState =
   | { status: 'idle' }
   | { status: 'loading' }
@@ -16,7 +22,11 @@ type PageState =
   | { status: 'invalid'; message: string }
   | { status: 'error'; code: string; message: string; isNetworkError: boolean }
 
-export function TimetablePage() {
+export function TimetablePage({
+  userId,
+  isRecommendationStale,
+  onRecommendationChange,
+}: TimetablePageProps) {
   const [state, setState] = useState<PageState>({ status: 'idle' })
   const activeRequest = useRef<AbortController | null>(null)
 
@@ -28,7 +38,6 @@ export function TimetablePage() {
   )
 
   const requestRecommendation = async ({
-    userId,
     params,
   }: RecommendationRequest) => {
     activeRequest.current?.abort()
@@ -43,6 +52,7 @@ export function TimetablePage() {
       }
 
       if (result.timetable === null) {
+        onRecommendationChange(null)
         setState({
           status: 'empty',
           targetCourseCount: result.targetCourseCount,
@@ -55,6 +65,7 @@ export function TimetablePage() {
         setState({ status: 'invalid', message: problem })
         return
       }
+      onRecommendationChange(result.timetable)
       setState({ status: 'success', timetable: result.timetable })
     } catch (error) {
       if (controller.signal.aborted) {
@@ -88,7 +99,7 @@ export function TimetablePage() {
       <header className="timetable-page__intro">
         <p className="timetable-page__eyebrow">TIMETABLE RECOMMENDER</p>
         <h1>나에게 맞는 시간표 찾기</h1>
-        <p>이수 과목과 관심 분야를 바탕으로 충돌 없는 과목 조합을 추천합니다.</p>
+        <p>사용자 #{userId}의 이수 과목과 관심 분야를 바탕으로 충돌 없는 과목 조합을 추천합니다.</p>
       </header>
 
       <section className="recommendation-panel" aria-labelledby="condition-title">
@@ -101,9 +112,16 @@ export function TimetablePage() {
         </div>
         <RecommendationForm
           isLoading={state.status === 'loading'}
+          hasResult={state.status === 'success'}
           onSubmit={(request) => void requestRecommendation(request)}
         />
       </section>
+
+      {isRecommendationStale && (
+        <div className="recommendation-stale" role="status">
+          이수 과목이 변경되었습니다. 추천 결과를 다시 생성하면 변경 사항이 반영됩니다.
+        </div>
+      )}
 
       <div className="timetable-page__output" aria-live="polite">
         {state.status === 'idle' && (

@@ -1,64 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ApiError, completedCoursesApi } from '../../api'
+import { useMemo, useState } from 'react'
 import type { CourseSummary } from '../../types'
 import './CompletedCourseSelector.css'
 
 export interface CompletedCourseSelectorProps {
   userId: number
   courses: readonly CourseSummary[]
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof ApiError) {
-    return error.message
-  }
-  return '요청을 처리하는 중 오류가 발생했습니다.'
+  completedCourseCodes: ReadonlySet<string>
+  pendingCourseCodes: ReadonlySet<string>
+  isLoading: boolean
+  error?: string | null
+  onToggleCourse: (courseCode: string) => void
 }
 
 export function CompletedCourseSelector({
   userId,
   courses,
+  completedCourseCodes,
+  pendingCourseCodes,
+  isLoading,
+  error = null,
+  onToggleCourse,
 }: CompletedCourseSelectorProps) {
   const [query, setQuery] = useState('')
-  const [completedCourseCodes, setCompletedCourseCodes] = useState<Set<string>>(
-    () => new Set(),
-  )
-  const [pendingCourseCodes, setPendingCourseCodes] = useState<Set<string>>(
-    () => new Set(),
-  )
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    let isCurrent = true
-
-    setIsLoading(true)
-    setErrorMessage(null)
-
-    completedCoursesApi
-      .getAll(userId)
-      .then(({ courses: completedCourses }) => {
-        if (isCurrent) {
-          setCompletedCourseCodes(
-            new Set(completedCourses.map(({ courseCode }) => courseCode)),
-          )
-        }
-      })
-      .catch((error: unknown) => {
-        if (isCurrent) {
-          setErrorMessage(getErrorMessage(error))
-        }
-      })
-      .finally(() => {
-        if (isCurrent) {
-          setIsLoading(false)
-        }
-      })
-
-    return () => {
-      isCurrent = false
-    }
-  }, [userId])
 
   const filteredCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase()
@@ -73,56 +36,12 @@ export function CompletedCourseSelector({
     )
   }, [courses, query])
 
-  const toggleCourse = async (courseCode: string) => {
-    if (pendingCourseCodes.has(courseCode)) {
-      return
-    }
-
-    const wasCompleted = completedCourseCodes.has(courseCode)
-    setErrorMessage(null)
-    setCompletedCourseCodes((current) => {
-      const next = new Set(current)
-      if (wasCompleted) {
-        next.delete(courseCode)
-      } else {
-        next.add(courseCode)
-      }
-      return next
-    })
-    setPendingCourseCodes((current) => new Set(current).add(courseCode))
-
-    try {
-      if (wasCompleted) {
-        await completedCoursesApi.remove(userId, courseCode)
-      } else {
-        await completedCoursesApi.add(userId, courseCode)
-      }
-    } catch (error) {
-      setCompletedCourseCodes((current) => {
-        const rolledBack = new Set(current)
-        if (wasCompleted) {
-          rolledBack.add(courseCode)
-        } else {
-          rolledBack.delete(courseCode)
-        }
-        return rolledBack
-      })
-      setErrorMessage(getErrorMessage(error))
-    } finally {
-      setPendingCourseCodes((current) => {
-        const next = new Set(current)
-        next.delete(courseCode)
-        return next
-      })
-    }
-  }
-
   return (
-    <section className="completed-course-selector" aria-labelledby="course-selector-title">
+    <section className="completed-course-selector" aria-labelledby={`course-selector-title-${userId}`}>
       <div className="completed-course-selector__header">
         <div>
           <p className="completed-course-selector__eyebrow">COMPLETED COURSES</p>
-          <h2 id="course-selector-title">이수 과목 선택</h2>
+          <h2 id={`course-selector-title-${userId}`}>이수 과목 선택</h2>
           <p>이수한 과목을 선택하면 추천 대상에서 제외됩니다.</p>
         </div>
         <span className="completed-course-selector__count">
@@ -140,9 +59,9 @@ export function CompletedCourseSelector({
         />
       </label>
 
-      {errorMessage && (
+      {error && (
         <div className="completed-course-selector__error" role="alert">
-          {errorMessage}
+          {error}
         </div>
       )}
 
@@ -167,7 +86,7 @@ export function CompletedCourseSelector({
                   aria-pressed={isCompleted}
                   aria-label={`${course.name}, ${isCompleted ? '이수함' : '이수하지 않음'}`}
                   disabled={isPending}
-                  onClick={() => void toggleCourse(course.courseCode)}
+                  onClick={() => onToggleCourse(course.courseCode)}
                 >
                   <span className="course-option__check" aria-hidden="true">
                     {isCompleted ? '✓' : ''}

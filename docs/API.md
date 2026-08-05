@@ -97,6 +97,23 @@ curl -X POST "http://localhost:8080/api/auth/login" \
 {"success":false,"data":null,"error":{"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호가 올바르지 않습니다.","fieldErrors":null}}
 ```
 
+## 전체 과목 목록
+
+### `GET /api/courses`
+
+- 성공: `200 OK`; 과목 코드 오름차순, 없으면 빈 배열
+- 요청 값: 없음
+- 멱등: 예
+- DB에 CSV import로 적재된 과목을 응답 DTO로 반환합니다.
+
+```bash
+curl "http://localhost:8080/api/courses"
+```
+
+```json
+{"success":true,"data":{"courses":[{"courseCode":"CS101","name":"프로그래밍 기초","credits":2}]},"error":null}
+```
+
 ## 이수 과목 목록
 
 ### `GET /api/users/{userId}/completed-courses`

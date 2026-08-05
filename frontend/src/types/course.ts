@@ -3,3 +3,7 @@ export interface CourseSummary {
   name: string
   credits: number
 }
+
+export interface CourseList {
+  courses: CourseSummary[]
+}

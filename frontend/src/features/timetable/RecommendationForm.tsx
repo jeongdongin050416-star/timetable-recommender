@@ -3,22 +3,20 @@ import type { RecommendationParams } from '../../types'
 import { INTEREST_AREAS } from './interestAreas'
 
 export interface RecommendationRequest {
-  userId: number
   params: RecommendationParams
 }
 
 interface RecommendationFormProps {
   isLoading: boolean
+  hasResult?: boolean
   onSubmit: (request: RecommendationRequest) => void
 }
 
 interface FormValues {
-  userId: string
   targetCourseCount: string
 }
 
 const INITIAL_VALUES: FormValues = {
-  userId: '1',
   targetCourseCount: '3',
 }
 
@@ -37,6 +35,7 @@ function parsePositiveInteger(value: string, label: string) {
 
 export function RecommendationForm({
   isLoading,
+  hasResult = false,
   onSubmit,
 }: RecommendationFormProps) {
   const [values, setValues] = useState(INITIAL_VALUES)
@@ -87,7 +86,6 @@ export function RecommendationForm({
     event.preventDefault()
 
     try {
-      const userId = parsePositiveInteger(values.userId, '사용자 ID')
       const targetCourseCount = parsePositiveInteger(
         values.targetCourseCount,
         '목표 과목 수',
@@ -98,7 +96,6 @@ export function RecommendationForm({
 
       setValidationError(null)
       onSubmit({
-        userId,
         params: {
           targetCourseCount,
           interestedAreaIds:
@@ -121,19 +118,6 @@ export function RecommendationForm({
   return (
     <form className="recommendation-form" onSubmit={handleSubmit} noValidate>
       <div className="recommendation-form__fields">
-        <label>
-          <span>사용자 ID</span>
-          <input
-            name="userId"
-            type="number"
-            min="1"
-            step="1"
-            inputMode="numeric"
-            value={values.userId}
-            onChange={(event) => updateValue('userId', event.target.value)}
-            disabled={isLoading}
-          />
-        </label>
         <label>
           <span>목표 과목 수</span>
           <input
@@ -205,7 +189,11 @@ export function RecommendationForm({
       )}
 
       <button type="submit" disabled={isLoading}>
-        {isLoading ? '추천 시간표 계산 중…' : '추천 시간표 조회'}
+        {isLoading
+          ? '추천 시간표 계산 중…'
+          : hasResult
+            ? '추천 시간표 다시 조회'
+            : '추천 시간표 조회'}
       </button>
     </form>
   )

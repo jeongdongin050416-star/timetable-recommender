@@ -1,4 +1,17 @@
 {
+  "groups": [
+    { "id": "foundation", "title": "기초필수 · 기초선택", "x": 16, "y": 16, "width": 362, "height": 222, "color": "#dce6f4" },
+    { "id": "major-required", "title": "전공필수", "x": 16, "y": 250, "width": 362, "height": 310, "color": "#cbd8ea" },
+    { "id": "major-elective", "title": "전공선택 · 주요 과목", "x": 16, "y": 574, "width": 362, "height": 526, "color": "#e1e3e7" },
+    { "id": "data-science", "title": "데이터 과학", "x": 398, "y": 16, "width": 352, "height": 124, "color": "#f3a0a4" },
+    { "id": "software-design", "title": "소프트웨어 디자인", "x": 766, "y": 16, "width": 696, "height": 124, "color": "#b9df91" },
+    { "id": "systems-network", "title": "시스템 · 네트워크", "x": 398, "y": 152, "width": 446, "height": 206, "color": "#efad7d" },
+    { "id": "visual-computing", "title": "비주얼 컴퓨팅", "x": 852, "y": 152, "width": 610, "height": 206, "color": "#b2d19b" },
+    { "id": "theory", "title": "전산이론", "x": 398, "y": 348, "width": 1064, "height": 224, "color": "#f5dd96" },
+    { "id": "secure-computing", "title": "시큐어 컴퓨팅", "x": 398, "y": 574, "width": 372, "height": 214, "color": "#b8b8b8" },
+    { "id": "social-computing", "title": "소셜 컴퓨팅", "x": 778, "y": 574, "width": 684, "height": 214, "color": "#aebbd2" },
+    { "id": "ai", "title": "인공지능 · 정보서비스 · 인터랙티브 컴퓨팅", "x": 398, "y": 796, "width": 1064, "height": 304, "color": "#d8e5ef" }
+  ],
   "nodes": [
     { "courseCode": "CS101", "x": 32, "y": 48, "width": 150, "height": 76 },
     { "courseCode": "CS109", "x": 212, "y": 48, "width": 150, "height": 76 },

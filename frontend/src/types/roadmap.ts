@@ -6,6 +6,16 @@ export interface RoadmapNode {
   height: number
 }
 
+export interface RoadmapGroup {
+  id: string
+  title: string
+  x: number
+  y: number
+  width: number
+  height: number
+  color: string
+}
+
 export type RoadmapRelationType = 'PREREQUISITE' | 'RECOMMENDED'
 
 export interface RoadmapEdge {
@@ -15,6 +25,7 @@ export interface RoadmapEdge {
 }
 
 export interface RoadmapLayout {
+  groups?: RoadmapGroup[]
   nodes: RoadmapNode[]
   edges: RoadmapEdge[]
 }

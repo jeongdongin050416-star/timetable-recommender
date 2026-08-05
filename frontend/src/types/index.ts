@@ -5,7 +5,7 @@ export type {
   CompletedCourseList,
   CompletedCourseStatus,
 } from './completedCourse'
-export type { CourseSummary } from './course'
+export type { CourseList, CourseSummary } from './course'
 export type {
   DayOfWeek,
   MeetingTime,
@@ -16,6 +16,7 @@ export type {
 } from './recommendation'
 export type {
   RoadmapEdge,
+  RoadmapGroup,
   RoadmapLayout,
   RoadmapNode,
   RoadmapRelationType,

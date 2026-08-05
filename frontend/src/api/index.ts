@@ -2,6 +2,6 @@ export { ApiError } from './ApiError'
 export { apiRequest } from './client'
 export { authApi } from './auth'
 export { completedCoursesApi } from './completedCourses'
+export { coursesApi } from './courses'
 export { healthApi } from './health'
 export { recommendationsApi } from './recommendations'
-
