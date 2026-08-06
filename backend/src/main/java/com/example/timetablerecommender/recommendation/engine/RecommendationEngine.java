@@ -59,10 +59,13 @@ public final class RecommendationEngine {
         CourseCandidate course = candidates.get(courseIndex);
         boolean courseAlreadySelected = selected.stream()
                 .anyMatch(selection -> selection.course().courseCode().equals(course.courseCode()));
+        boolean incompatibleCourseSelected = selected.stream()
+                .anyMatch(selection -> course.incompatibleCourseCodes()
+                        .contains(selection.course().courseCode()));
         List<SectionCandidate> sections = course.sections().stream()
                 .sorted(Comparator.comparing(SectionCandidate::sectionKey))
                 .toList();
-        if (!courseAlreadySelected) {
+        if (!courseAlreadySelected && !incompatibleCourseSelected) {
             for (SectionCandidate section : sections) {
                 if (conflictChecker.conflicts(occupiedTimes, section.meetingTimes())) {
                     continue;

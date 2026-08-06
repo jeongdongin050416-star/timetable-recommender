@@ -98,6 +98,7 @@ public class RecommendationService {
         Map<Long, Set<Long>> areasByCourse = loadAreas(courseIds);
         Map<Long, Set<String>> recommendedPrerequisites = loadRecommendedPrerequisites(courseIds);
         Map<Long, Set<String>> prerequisites = loadPrerequisites(courseIds, RelationType.PREREQUISITE);
+        Map<Long, Set<String>> incompatibleCourses = loadIncompatibleCourses(courseIds);
         Map<Long, List<SectionCandidate>> sectionsByCourse = loadSections(courseIds);
 
         List<CourseCandidate> candidates = courses.stream()
@@ -109,6 +110,7 @@ public class RecommendationService {
                         areasByCourse.getOrDefault(course.getId(), Set.of()),
                         recommendedPrerequisites.getOrDefault(course.getId(), Set.of()),
                         prerequisites.getOrDefault(course.getId(), Set.of()),
+                        incompatibleCourses.getOrDefault(course.getId(), Set.of()),
                         sectionsByCourse.getOrDefault(course.getId(), List.of())))
                 .toList();
         RecommendationCriteria criteria = new RecommendationCriteria(
@@ -147,6 +149,20 @@ public class RecommendationService {
 
     private Map<Long, Set<String>> loadRecommendedPrerequisites(List<Long> courseIds) {
         return loadPrerequisites(courseIds, RelationType.RECOMMENDED);
+    }
+
+    private Map<Long, Set<String>> loadIncompatibleCourses(List<Long> courseIds) {
+        Map<Long, Set<String>> incompatibleCourses = new HashMap<>();
+        prerequisiteRepository.findByCourseIdInAndRelationType(courseIds, RelationType.INCOMPATIBLE)
+                .forEach(relation -> {
+                    Course course = relation.getCourse();
+                    Course incompatible = relation.getPrerequisiteCourse();
+                    incompatibleCourses.computeIfAbsent(course.getId(), ignored -> new HashSet<>())
+                            .add(incompatible.getCourseCode());
+                    incompatibleCourses.computeIfAbsent(incompatible.getId(), ignored -> new HashSet<>())
+                            .add(course.getCourseCode());
+                });
+        return incompatibleCourses;
     }
 
     private Map<Long, Set<String>> loadPrerequisites(

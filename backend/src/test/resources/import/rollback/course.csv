@@ -1,2 +1,2 @@
-courseCode,name,credits,courseType
-CS999,롤백 대상,3,MAJOR_ELECTIVE
+courseCode,name,credits,courseType,mainArea
+CS999,롤백 대상,3,MAJOR_ELECTIVE,THEORY

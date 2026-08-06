@@ -58,9 +58,14 @@ class CsvImportPersistence {
             String interestAreaFileName) {
         Map<String, Course> courses = new HashMap<>();
         for (CourseRow row : courseRows) {
+            if (!interestAreaRepository.existsByName(row.mainArea())) {
+                throw new CsvImportException(
+                        "course.csv", row.rowNumber(), "존재하지 않는 mainArea입니다: " + row.mainArea());
+            }
             Course course = courseRepository.findByCourseCode(row.courseCode())
                     .orElseGet(() -> courseRepository.save(new Course(
                             row.courseCode(), row.name(), row.credits(), row.courseType())));
+            course.assignMainArea(row.mainArea());
             courses.put(row.courseCode(), course);
         }
 
@@ -127,6 +132,7 @@ class CsvImportPersistence {
                 courseInterestAreaRepository.save(new CourseInterestArea(course, interestArea));
             }
         }
+
     }
 
     private Course requireCourse(

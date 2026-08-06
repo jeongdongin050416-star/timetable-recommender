@@ -36,6 +36,9 @@ public class Course {
     @Column(name = "course_type", nullable = false, length = 50)
     private String courseType;
 
+    @Column(name = "main_area", length = 100)
+    private String mainArea;
+
     protected Course() {
     }
 
@@ -64,6 +67,14 @@ public class Course {
 
     public String getCourseType() {
         return courseType;
+    }
+
+    public String getMainArea() {
+        return mainArea;
+    }
+
+    public void assignMainArea(String mainArea) {
+        this.mainArea = mainArea;
     }
 
     @Override

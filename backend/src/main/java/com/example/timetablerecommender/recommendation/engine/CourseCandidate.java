@@ -11,6 +11,7 @@ public record CourseCandidate(
         Set<Long> interestAreaIds,
         Set<String> recommendedPrerequisiteCodes,
         Set<String> prerequisiteCodes,
+        Set<String> incompatibleCourseCodes,
         List<SectionCandidate> sections) {
 
     public CourseCandidate {
@@ -20,7 +21,21 @@ public record CourseCandidate(
         interestAreaIds = Set.copyOf(interestAreaIds);
         recommendedPrerequisiteCodes = Set.copyOf(recommendedPrerequisiteCodes);
         prerequisiteCodes = Set.copyOf(prerequisiteCodes);
+        incompatibleCourseCodes = Set.copyOf(incompatibleCourseCodes);
         sections = List.copyOf(sections);
+    }
+
+    public CourseCandidate(
+            String courseCode,
+            String name,
+            int credits,
+            boolean majorRequired,
+            Set<Long> interestAreaIds,
+            Set<String> recommendedPrerequisiteCodes,
+            Set<String> prerequisiteCodes,
+            List<SectionCandidate> sections) {
+        this(courseCode, name, credits, majorRequired, interestAreaIds,
+                recommendedPrerequisiteCodes, prerequisiteCodes, Set.of(), sections);
     }
 
     public CourseCandidate(
@@ -32,6 +47,6 @@ public record CourseCandidate(
             Set<String> recommendedPrerequisiteCodes,
             List<SectionCandidate> sections) {
         this(courseCode, name, credits, majorRequired, interestAreaIds,
-                recommendedPrerequisiteCodes, Set.of(), sections);
+                recommendedPrerequisiteCodes, Set.of(), Set.of(), sections);
     }
 }

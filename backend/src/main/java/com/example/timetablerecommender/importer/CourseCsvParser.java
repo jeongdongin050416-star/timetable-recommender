@@ -10,7 +10,7 @@ class CourseCsvParser extends AbstractCsvParser<CourseRow> {
 
     @Override
     protected List<String> requiredHeaders() {
-        return List.of("courseCode", "name", "credits", "courseType");
+        return List.of("courseCode", "name", "credits", "courseType", "mainArea");
     }
 
     @Override
@@ -24,6 +24,7 @@ class CourseCsvParser extends AbstractCsvParser<CourseRow> {
                 required(record, "name", rowNumber, fileName),
                 credits,
                 required(record, "courseType", rowNumber, fileName),
+                required(record, "mainArea", rowNumber, fileName),
                 rowNumber);
     }
 }

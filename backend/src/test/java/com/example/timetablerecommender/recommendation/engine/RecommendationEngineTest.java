@@ -147,6 +147,18 @@ class RecommendationEngineTest {
     }
 
     @Test
+    void doesNotRecommendIncompatibleCoursesTogether() {
+        CourseCandidate first = new CourseCandidate(
+                "CS211", "4학점 과목 1", 4, false, Set.of(), Set.of(), Set.of(), Set.of("CS310"),
+                List.of(section("CS211-A", MONDAY, "09:00", "10:00")));
+        CourseCandidate second = new CourseCandidate(
+                "CS310", "4학점 과목 2", 4, false, Set.of(), Set.of(), Set.of(), Set.of("CS211"),
+                List.of(section("CS310-A", TUESDAY, "09:00", "10:00")));
+
+        assertThat(engine.recommend(List.of(first, second), criteria(2))).isEmpty();
+    }
+
+    @Test
     void equalScoresAreSortedByCourseCodeThenSectionKey() {
         List<CourseCandidate> candidates = List.of(
                 course("CS300", false, Set.of(), Set.of(), section("CS300-A", TUESDAY, "09:00", "10:00")),

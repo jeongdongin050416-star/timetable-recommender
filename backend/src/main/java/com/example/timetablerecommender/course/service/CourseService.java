@@ -21,7 +21,7 @@ public class CourseService {
         return new CourseListResponse(courseRepository.findAllByOrderByCourseCodeAsc()
                 .stream()
                 .map(course -> new CourseItemResponse(
-                        course.getCourseCode(), course.getName(), course.getCredits()))
+                        course.getCourseCode(), course.getName(), course.getCredits(), course.getMainArea()))
                 .toList());
     }
 }
