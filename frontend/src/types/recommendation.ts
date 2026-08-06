@@ -27,8 +27,15 @@ export interface Timetable {
   courses: TimetableCourse[]
 }
 
+export type StudentYear =
+  | 'FIRST_YEAR'
+  | 'SECOND_YEAR'
+  | 'THIRD_YEAR'
+  | 'FOURTH_YEAR_OR_ABOVE'
+
 export interface RecommendationParams {
   targetCourseCount: number
+  studentYear: StudentYear
   interestedAreaIds?: number[]
   uninterestedAreaIds?: number[]
 }
@@ -36,6 +43,6 @@ export interface RecommendationParams {
 export interface RecommendationResult {
   userId: number
   targetCourseCount: number
+  studentYear: StudentYear
   timetable: Timetable | null
 }
-
