@@ -13,5 +13,8 @@ export const authApi = {
       method: 'POST',
       body: request,
     }),
-}
 
+  logout: () => apiRequest<null>('/api/auth/logout', { method: 'POST' }),
+
+  me: () => apiRequest<AuthUser>('/api/me'),
+}

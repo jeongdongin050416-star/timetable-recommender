@@ -27,8 +27,16 @@ spring:
 server:
   # 백엔드가 HTTP 요청을 받을 포트이며 기본 주소는 http://localhost:8080이다.
   port: 8080
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
 
 app:
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173,http://127.0.0.1:5173}
   csv-import:
     enabled: false
     course-resource: classpath:data/course.csv

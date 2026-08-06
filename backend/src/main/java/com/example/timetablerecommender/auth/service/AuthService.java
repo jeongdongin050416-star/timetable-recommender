@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.timetablerecommender.auth.dto.AuthResponse;
 import com.example.timetablerecommender.auth.dto.LoginRequest;
 import com.example.timetablerecommender.auth.dto.SignupRequest;
+import com.example.timetablerecommender.auth.security.SessionUser;
 import com.example.timetablerecommender.common.exception.DuplicateUserException;
 import com.example.timetablerecommender.common.exception.InvalidCredentialsException;
 import com.example.timetablerecommender.domain.AppUser;
@@ -47,6 +48,13 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
         return toResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public SessionUser loadSessionUser(Long userId) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(com.example.timetablerecommender.common.exception.UserNotFoundException::new);
+        return new SessionUser(user.getId(), user.getLoginId(), user.getName());
     }
 
     private String normalizeEmail(String email) {

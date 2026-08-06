@@ -3,7 +3,6 @@ import type { CourseSummary } from '../../types'
 import './CompletedCourseSelector.css'
 
 export interface CompletedCourseSelectorProps {
-  userId: number
   courses: readonly CourseSummary[]
   completedCourseCodes: ReadonlySet<string>
   pendingCourseCodes: ReadonlySet<string>
@@ -13,7 +12,6 @@ export interface CompletedCourseSelectorProps {
 }
 
 export function CompletedCourseSelector({
-  userId,
   courses,
   completedCourseCodes,
   pendingCourseCodes,
@@ -37,11 +35,11 @@ export function CompletedCourseSelector({
   }, [courses, query])
 
   return (
-    <section className="completed-course-selector" aria-labelledby={`course-selector-title-${userId}`}>
+    <section className="completed-course-selector" aria-labelledby="course-selector-title">
       <div className="completed-course-selector__header">
         <div>
           <p className="completed-course-selector__eyebrow">COMPLETED COURSES</p>
-          <h2 id={`course-selector-title-${userId}`}>이수 과목 선택</h2>
+          <h2 id="course-selector-title">이수 과목 선택</h2>
           <p>이수한 과목을 선택하면 추천 대상에서 제외됩니다.</p>
         </div>
         <span className="completed-course-selector__count">

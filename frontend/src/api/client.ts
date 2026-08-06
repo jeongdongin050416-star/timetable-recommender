@@ -42,6 +42,7 @@ export async function apiRequest<T>(
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
+      credentials: 'include',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     })
@@ -52,11 +53,37 @@ export async function apiRequest<T>(
     })
   }
 
+  let responseBody: string
+  try {
+    responseBody = await response.text()
+  } catch (cause) {
+    throw new ApiError('서버 응답을 읽을 수 없습니다.', {
+      status: response.status,
+      code: 'INVALID_RESPONSE',
+      cause,
+    })
+  }
+
   let rawPayload: unknown
   try {
-    rawPayload = await response.json()
+    rawPayload = JSON.parse(responseBody)
   } catch (cause) {
-    throw new ApiError('서버 응답을 처리할 수 없습니다.', {
+    if (response.status >= 500 || responseBody.trim() === '') {
+      throw new ApiError('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해 주세요.', {
+        status: response.status,
+        code: 'NETWORK_ERROR',
+        cause,
+      })
+    }
+    const contentType = response.headers.get('content-type') ?? ''
+    const isHtml = contentType.includes('text/html') || /^\s*<!doctype html/i.test(responseBody)
+    const isCorsRejection = response.status === 403 && responseBody.includes('Invalid CORS request')
+    const message = isCorsRejection
+      ? '현재 웹 주소가 CORS 허용 목록에 없습니다. CORS_ALLOWED_ORIGIN 설정을 확인해 주세요.'
+      : isHtml
+        ? 'API 요청이 백엔드가 아닌 프런트 서버로 전달되었습니다. VITE_API_BASE_URL 설정을 확인해 주세요.'
+        : `서버가 JSON이 아닌 응답을 반환했습니다. (HTTP ${response.status})`
+    throw new ApiError(message, {
       status: response.status,
       code: 'INVALID_RESPONSE',
       cause,

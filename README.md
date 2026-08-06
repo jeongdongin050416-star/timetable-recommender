@@ -37,6 +37,9 @@ cd backend
 
 백엔드는 `http://localhost:8080`에서 실행됩니다.
 
+프론트엔드 개발 서버는 `/api` 요청을 이 주소로 전달하므로, 로그인이나 회원가입 전에
+백엔드 터미널에 `Started TimetableRecommenderApplication`이 출력되었는지 확인합니다.
+
 ```bash
 curl http://localhost:8080/api/health
 ```
@@ -80,6 +83,9 @@ docker compose down -v
 | `DB_URL` | `jdbc:postgresql://localhost:5432/timetable` |
 | `DB_USERNAME` | `timetable` |
 | `DB_PASSWORD` | `timetable` |
+| `CORS_ALLOWED_ORIGIN` | `http://localhost:5173,http://127.0.0.1:5173` |
+
+여러 프론트엔드 주소를 허용해야 하면 `CORS_ALLOWED_ORIGIN`에 쉼표로 구분해 입력합니다.
 
 ## 기본 CSV 데이터 가져오기
 
