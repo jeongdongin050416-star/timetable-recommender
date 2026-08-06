@@ -66,9 +66,9 @@ public final class TimetableScorer {
                 default -> 0;
             };
             case THIRD_YEAR -> switch (courseLevel) {
-                case 2 -> 25;
+                case 2 -> 30;
                 case 3 -> 35;
-                case 4 -> 15;
+                case 4 -> 25;
                 default -> 0;
             };
             case FOURTH_YEAR_OR_ABOVE -> switch (courseLevel) {
