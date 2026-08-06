@@ -240,8 +240,8 @@ class ApiIntegrationTest {
         completedCourseRepository.save(new CompletedCourse(user, completed));
         courseInterestAreaRepository.save(new CourseInterestArea(interested, theory));
         courseInterestAreaRepository.save(new CourseInterestArea(excluded, security));
-        prerequisiteRepository.save(new CoursePrerequisite(required, completed, RelationType.RECOMMENDED));
-        prerequisiteRepository.save(new CoursePrerequisite(unmet, missingPrerequisite, RelationType.RECOMMENDED));
+        prerequisiteRepository.save(new CoursePrerequisite(required, completed, RelationType.PREREQUISITE));
+        prerequisiteRepository.save(new CoursePrerequisite(unmet, missingPrerequisite, RelationType.PREREQUISITE));
         addSection(interested, "A", DayOfWeek.MONDAY, "09:00", "10:00");
         addSection(required, "A", DayOfWeek.TUESDAY, "09:00", "10:00");
         addSection(excluded, "A", DayOfWeek.WEDNESDAY, "09:00", "10:00");
@@ -255,7 +255,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.targetCourseCount").value(2))
                 .andExpect(jsonPath("$.data.studentYear").value("THIRD_YEAR"))
-                .andExpect(jsonPath("$.data.timetable.score").value(70))
+                .andExpect(jsonPath("$.data.timetable.score").value(35))
                 .andExpect(jsonPath("$.data.timetable.courseCount").value(2))
                 .andExpect(jsonPath("$.data.timetable.courses.length()").value(2))
                 .andExpect(jsonPath("$.data.timetable.courses[0].courseCode").value("CS200"))

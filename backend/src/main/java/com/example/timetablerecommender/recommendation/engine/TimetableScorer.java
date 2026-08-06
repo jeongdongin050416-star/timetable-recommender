@@ -1,22 +1,19 @@
 package com.example.timetablerecommender.recommendation.engine;
 
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-
-import com.example.timetablerecommender.recommendation.conflict.MeetingTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class TimetableScorer {
 
-    static final int INTERESTED_COURSE_SCORE = 30;
-    static final int UNINTERESTED_COURSE_SCORE = -15;
-    static final int MAJOR_REQUIRED_SCORE = 20;
-    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 20;
-    static final int RECOMMENDED_PREREQUISITE_UNMET_SCORE = -10;
+    static final int INTERESTED_COURSE_SCORE = 2;
+    static final int UNINTERESTED_COURSE_SCORE = -2;
+    static final int MAJOR_REQUIRED_SCORE = 5;
+    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 3;
+    static final int RECOMMENDED_PREREQUISITE_UNMET_SCORE = 0;
+    static final int PREREQUISITE_MET_SCORE = 3;
+    static final int PREREQUISITE_UNMET_SCORE = -3;
+    private static final Pattern COURSE_NUMBER_PATTERN = Pattern.compile("(?:^|\\D)(\\d{3})$");
 
     public int score(List<TimetableSelection> selections, RecommendationCriteria criteria) {
         int score = 0;
@@ -31,33 +28,51 @@ public final class TimetableScorer {
             if (course.majorRequired()) {
                 score += MAJOR_REQUIRED_SCORE;
             }
+            score += studentYearScore(course.courseCode(), criteria.studentYear());
             for (String prerequisite : course.recommendedPrerequisiteCodes()) {
                 score += criteria.completedCourseCodes().contains(prerequisite)
                         ? RECOMMENDED_PREREQUISITE_MET_SCORE
                         : RECOMMENDED_PREREQUISITE_UNMET_SCORE;
             }
-        }
-        return score - gapPenalty(selections);
-    }
-
-    private int gapPenalty(List<TimetableSelection> selections) {
-        Map<DayOfWeek, List<MeetingTime>> byDay = new EnumMap<>(DayOfWeek.class);
-        for (TimetableSelection selection : selections) {
-            for (MeetingTime meetingTime : selection.section().meetingTimes()) {
-                byDay.computeIfAbsent(meetingTime.dayOfWeek(), ignored -> new ArrayList<>())
-                        .add(meetingTime);
+            for (String prerequisite : course.prerequisiteCodes()) {
+                score += criteria.completedCourseCodes().contains(prerequisite)
+                        ? PREREQUISITE_MET_SCORE
+                        : PREREQUISITE_UNMET_SCORE;
             }
         }
-
-        int penalty = 0;
-        for (List<MeetingTime> dailyTimes : byDay.values()) {
-            dailyTimes.sort(Comparator.comparing(MeetingTime::startTime));
-            for (int index = 1; index < dailyTimes.size(); index++) {
-                long gapMinutes = Duration.between(
-                        dailyTimes.get(index - 1).endTime(), dailyTimes.get(index).startTime()).toMinutes();
-                penalty += Math.max(0, Math.toIntExact(gapMinutes / 30));
-            }
-        }
-        return penalty;
+        return score;
     }
+
+    private int studentYearScore(String courseCode, StudentYear studentYear) {
+        Matcher matcher = COURSE_NUMBER_PATTERN.matcher(courseCode);
+        if (!matcher.find()) {
+            return 0;
+        }
+
+        int courseLevel = Integer.parseInt(matcher.group(1)) / 100;
+        return switch (studentYear) {
+            case FIRST_YEAR -> switch (courseLevel) {
+                case 1 -> 15;
+                case 2 -> 10;
+                default -> 0;
+            };
+            case SECOND_YEAR -> switch (courseLevel) {
+                case 2 -> 15;
+                case 3 -> 10;
+                default -> 0;
+            };
+            case THIRD_YEAR -> switch (courseLevel) {
+                case 2 -> 10;
+                case 3 -> 15;
+                case 4 -> 5;
+                default -> 0;
+            };
+            case FOURTH_YEAR_OR_ABOVE -> switch (courseLevel) {
+                case 3 -> 14;
+                case 4 -> 15;
+                default -> 0;
+            };
+        };
+    }
+
 }

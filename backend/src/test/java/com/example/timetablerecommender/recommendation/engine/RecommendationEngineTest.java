@@ -81,7 +81,7 @@ class RecommendationEngineTest {
     }
 
     @Test
-    void timetableScorerAppliesEveryRuleAndThirtyMinuteGapUnits() {
+    void timetableScorerAppliesEveryCourseScoringRule() {
         CourseCandidate first = course(
                 "CS100", true, Set.of(1L), Set.of("PRE100", "PRE200"),
                 section("CS100-A", MONDAY, "09:00", "10:00"));
@@ -93,21 +93,57 @@ class RecommendationEngineTest {
 
         List<RecommendedTimetable> results = engine.recommend(List.of(first, second), criteria);
 
-        // +30 interested, -15 uninterested, +20 major, +20 met, -10 unmet, -2 gap.
-        assertThat(results).singleElement().extracting(RecommendedTimetable::score).isEqualTo(43);
+        // +2 interested, -2 uninterested, +5 major, +3 recommended met, +0 recommended unmet,
+        // +15 first-year 100-level, +10 first-year 200-level.
+        assertThat(results).singleElement().extracting(RecommendedTimetable::score).isEqualTo(33);
     }
 
     @Test
-    void gapPenaltyIgnoresLessThanThirtyMinutesAndDifferentDays() {
+    void gapsBetweenClassesDoNotAffectScore() {
         CourseCandidate first = course(
                 "CS100", false, Set.of(), Set.of(), section("CS100-A", MONDAY, "09:00", "10:00"));
         CourseCandidate second = course(
-                "CS200", false, Set.of(), Set.of(), section("CS200-A", MONDAY, "10:29", "11:00"));
+                "CS200", false, Set.of(), Set.of(), section("CS200-A", MONDAY, "12:00", "13:00"));
         CourseCandidate third = course(
                 "CS300", false, Set.of(), Set.of(), section("CS300-A", TUESDAY, "18:00", "19:00"));
 
         assertThat(engine.recommend(List.of(first, second, third), criteria(3)))
-                .singleElement().extracting(RecommendedTimetable::score).isEqualTo(0);
+                .singleElement().extracting(RecommendedTimetable::score).isEqualTo(25);
+    }
+
+    @Test
+    void appliesCourseLevelScoresForEveryStudentYear() {
+        assertThat(scoreFor("CS101", StudentYear.FIRST_YEAR)).isEqualTo(15);
+        assertThat(scoreFor("CS201", StudentYear.FIRST_YEAR)).isEqualTo(10);
+        assertThat(scoreFor("CS201", StudentYear.SECOND_YEAR)).isEqualTo(15);
+        assertThat(scoreFor("CS301", StudentYear.SECOND_YEAR)).isEqualTo(10);
+        assertThat(scoreFor("CS301", StudentYear.THIRD_YEAR)).isEqualTo(15);
+        assertThat(scoreFor("CS201", StudentYear.THIRD_YEAR)).isEqualTo(10);
+        assertThat(scoreFor("CS401", StudentYear.THIRD_YEAR)).isEqualTo(5);
+        assertThat(scoreFor("CS301", StudentYear.FOURTH_YEAR_OR_ABOVE)).isEqualTo(14);
+        assertThat(scoreFor("CS401", StudentYear.FOURTH_YEAR_OR_ABOVE)).isEqualTo(15);
+    }
+
+    @Test
+    void scoresRecommendedAndRequiredPrerequisitesByCompletion() {
+        CourseCandidate candidate = new CourseCandidate(
+                "CS500", "선수과목 점수", 3, false, Set.of(),
+                Set.of("REC_MET", "REC_UNMET"),
+                Set.of("REQ_MET", "REQ_UNMET"),
+                List.of(section("CS500-A", MONDAY, "09:00", "10:00")));
+        RecommendationCriteria criteria = new RecommendationCriteria(
+                1, StudentYear.FIRST_YEAR, Set.of(), Set.of(), Set.of("REC_MET", "REQ_MET"));
+
+        // Recommended: +3 +0, prerequisite: +3 -3.
+        assertThat(engine.recommend(List.of(candidate), criteria))
+                .singleElement().extracting(RecommendedTimetable::score).isEqualTo(3);
+    }
+
+    @Test
+    void givesNoStudentYearScoreToUnmatchedCourseLevelsOrInvalidCodes() {
+        assertThat(scoreFor("CS301", StudentYear.FIRST_YEAR)).isZero();
+        assertThat(scoreFor("CS500", StudentYear.FOURTH_YEAR_OR_ABOVE)).isZero();
+        assertThat(scoreFor("SEMINAR", StudentYear.FIRST_YEAR)).isZero();
     }
 
     @Test
@@ -179,6 +215,15 @@ class RecommendationEngineTest {
 
     private static RecommendationCriteria criteria(int targetCourseCount) {
         return new RecommendationCriteria(targetCourseCount, Set.of(), Set.of(), Set.of());
+    }
+
+    private int scoreFor(String courseCode, StudentYear studentYear) {
+        CourseCandidate candidate = course(
+                courseCode, false, Set.of(), Set.of(),
+                section(courseCode + "-A", MONDAY, "09:00", "10:00"));
+        RecommendationCriteria criteria = new RecommendationCriteria(
+                1, studentYear, Set.of(), Set.of(), Set.of());
+        return engine.recommend(List.of(candidate), criteria).getFirst().score();
     }
 
     private static CourseCandidate course(

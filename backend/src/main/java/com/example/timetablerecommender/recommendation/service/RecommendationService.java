@@ -97,6 +97,7 @@ public class RecommendationService {
         List<Long> courseIds = courses.stream().map(Course::getId).toList();
         Map<Long, Set<Long>> areasByCourse = loadAreas(courseIds);
         Map<Long, Set<String>> recommendedPrerequisites = loadRecommendedPrerequisites(courseIds);
+        Map<Long, Set<String>> prerequisites = loadPrerequisites(courseIds, RelationType.PREREQUISITE);
         Map<Long, List<SectionCandidate>> sectionsByCourse = loadSections(courseIds);
 
         List<CourseCandidate> candidates = courses.stream()
@@ -107,6 +108,7 @@ public class RecommendationService {
                         MAJOR_REQUIRED.equals(course.getCourseType()),
                         areasByCourse.getOrDefault(course.getId(), Set.of()),
                         recommendedPrerequisites.getOrDefault(course.getId(), Set.of()),
+                        prerequisites.getOrDefault(course.getId(), Set.of()),
                         sectionsByCourse.getOrDefault(course.getId(), List.of())))
                 .toList();
         RecommendationCriteria criteria = new RecommendationCriteria(
@@ -144,9 +146,14 @@ public class RecommendationService {
     }
 
     private Map<Long, Set<String>> loadRecommendedPrerequisites(List<Long> courseIds) {
+        return loadPrerequisites(courseIds, RelationType.RECOMMENDED);
+    }
+
+    private Map<Long, Set<String>> loadPrerequisites(
+            List<Long> courseIds, RelationType relationType) {
         Map<Long, Set<String>> result = new HashMap<>();
         List<CoursePrerequisite> prerequisites = prerequisiteRepository
-                .findByCourseIdInAndRelationType(courseIds, RelationType.RECOMMENDED);
+                .findByCourseIdInAndRelationType(courseIds, relationType);
         for (CoursePrerequisite prerequisite : prerequisites) {
             result.computeIfAbsent(prerequisite.getCourse().getId(), ignored -> new HashSet<>())
                     .add(prerequisite.getPrerequisiteCourse().getCourseCode());
