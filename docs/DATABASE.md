@@ -91,7 +91,7 @@ course N ── N course              (course_prerequisite의 자기 참조 관�
 - `SOFTWARE_DESIGN`
 - `SECURE_COMPUTING`
 - `VISUAL_COMPUTING`
-- `AI_INFORMATION_SERVICE`
+- `AI`
 - `SOCIAL_COMPUTING`
 - `INTERACTIVE_COMPUTING`
 
@@ -110,5 +110,7 @@ course N ── N course              (course_prerequisite의 자기 참조 관�
 | `prerequisite_course_id` | PK 일부, FK → `course.id` | 선수 또는 권장 과목 |
 | `relation_type` | NOT NULL, 허용값 검사 | 관계 종류 |
 
-`relation_type`은 필수 선수 과목을 뜻하는 `PREREQUISITE` 또는 권장 과목을 뜻하는
-`RECOMMENDED`입니다. 한 과목이 자기 자신의 선수 과목이 될 수 없습니다.
+`relation_type`은 필수 선수 과목을 뜻하는 `PREREQUISITE`, 권장 과목을 뜻하는
+`RECOMMENDED`, 함께 이수할 수 없는 과목 관계인 `INCOMPATIBLE`입니다. 한 과목이
+자기 자신의 관계 과목이 될 수 없습니다. `INCOMPATIBLE`은 한 방향만 저장해도
+추천 과정에서는 양방향 관계로 처리합니다.

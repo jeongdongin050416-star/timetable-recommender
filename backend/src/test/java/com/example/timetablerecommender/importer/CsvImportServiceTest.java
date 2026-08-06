@@ -51,5 +51,6 @@ class CsvImportServiceTest {
         assertThat(sectionTimeRepository.count()).isEqualTo(1);
         assertThat(prerequisiteRepository.count()).isEqualTo(1);
         assertThat(courseInterestAreaRepository.count()).isEqualTo(2);
+        assertThat(courseRepository.findByCourseCode("CS101").orElseThrow().getMainArea()).isEqualTo("THEORY");
     }
 }

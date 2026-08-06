@@ -11,7 +11,7 @@ export const INTEREST_AREAS: readonly InterestAreaOption[] = [
   { id: 4, name: '소프트웨어디자인' },
   { id: 5, name: '시큐어컴퓨팅' },
   { id: 6, name: '비주얼컴퓨팅' },
-  { id: 7, name: '인공지능/정보서비스' },
+  { id: 7, name: '인공지능' },
   { id: 8, name: '소셜컴퓨팅' },
   { id: 9, name: '인터랙티브컴퓨팅' },
 ]

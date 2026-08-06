@@ -43,7 +43,8 @@ class DefaultCsvDataImportTest {
         assertThat(courseRepository.count()).isEqualTo(61);
         assertThat(sectionRepository.count()).isEqualTo(44);
         assertThat(sectionTimeRepository.count()).isEqualTo(88);
-        assertThat(prerequisiteRepository.count()).isEqualTo(33);
-        assertThat(courseInterestAreaRepository.count()).isEqualTo(71);
+        assertThat(prerequisiteRepository.count()).isEqualTo(44);
+        assertThat(courseInterestAreaRepository.count()).isEqualTo(110);
+        assertThat(courseRepository.findByCourseCode("CS270").orElseThrow().getMainArea()).isEqualTo("AI");
     }
 }

@@ -5,7 +5,8 @@ import java.time.LocalTime;
 
 import com.example.timetablerecommender.domain.RelationType;
 
-record CourseRow(String courseCode, String name, int credits, String courseType, long rowNumber) {
+record CourseRow(
+        String courseCode, String name, int credits, String courseType, String mainArea, long rowNumber) {
 }
 
 record CourseSectionRow(
