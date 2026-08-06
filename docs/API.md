@@ -195,8 +195,8 @@ curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
 - 관심 분야에 속하는 과목: 과목당 `+30`
 - 미관심 분야에 속하는 과목: 과목당 `-15`
 - 전공필수: 과목당 `+20`
-- `RECOMMENDED` 선수 관계: 이수했으면 관계당 `+20`, 미이수면 `-10`
-- 같은 요일의 연속 수업 사이 공강: 30분당 `-1`
+- `RECOMMENDED` 선수 관계: 이수했으면 관계당 `+15`, 미이수면 `0`
+- `PREREQUISITE` 선수 관계: 이수했으면 관계당 `+20`, 미이수면 `-20`
 
 ```bash
 curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount=3&interestedAreaIds=1,2&uninterestedAreaIds=3"
