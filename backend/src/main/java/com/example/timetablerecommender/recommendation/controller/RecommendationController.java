@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.timetablerecommender.common.api.ApiResponse;
 import com.example.timetablerecommender.auth.security.SessionUser;
 import com.example.timetablerecommender.recommendation.dto.RecommendationResponse;
+import com.example.timetablerecommender.recommendation.engine.StudentYear;
 import com.example.timetablerecommender.recommendation.service.RecommendationService;
 
 import jakarta.validation.constraints.Max;
@@ -33,9 +34,10 @@ public class RecommendationController {
             @AuthenticationPrincipal SessionUser user,
             @RequestParam @Min(value = 1, message = "1 이상이어야 합니다.")
             @Max(value = 20, message = "20 이하여야 합니다.") int targetCourseCount,
+            @RequestParam StudentYear studentYear,
             @RequestParam(required = false) List<Long> interestedAreaIds,
             @RequestParam(required = false) List<Long> uninterestedAreaIds) {
         return ApiResponse.success(recommendationService.recommend(
-                user.userId(), targetCourseCount, interestedAreaIds, uninterestedAreaIds));
+                user.userId(), targetCourseCount, studentYear, interestedAreaIds, uninterestedAreaIds));
     }
 }

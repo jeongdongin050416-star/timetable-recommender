@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import type { RecommendationParams } from '../../types'
+import type { RecommendationParams, StudentYear } from '../../types'
 import { INTEREST_AREAS } from './interestAreas'
 
 export interface RecommendationRequest {
@@ -14,10 +14,12 @@ interface RecommendationFormProps {
 
 interface FormValues {
   targetCourseCount: string
+  studentYear: StudentYear
 }
 
 const INITIAL_VALUES: FormValues = {
   targetCourseCount: '3',
+  studentYear: 'FIRST_YEAR',
 }
 
 function parsePositiveInteger(value: string, label: string) {
@@ -98,6 +100,7 @@ export function RecommendationForm({
       onSubmit({
         params: {
           targetCourseCount,
+          studentYear: values.studentYear,
           interestedAreaIds:
             interestedAreaIds.size > 0
               ? [...interestedAreaIds].sort((left, right) => left - right)
@@ -133,6 +136,20 @@ export function RecommendationForm({
             }
             disabled={isLoading}
           />
+        </label>
+        <label>
+          <span>학년</span>
+          <select
+            name="studentYear"
+            value={values.studentYear}
+            onChange={(event) => updateValue('studentYear', event.target.value as StudentYear)}
+            disabled={isLoading}
+          >
+            <option value="FIRST_YEAR">1학년</option>
+            <option value="SECOND_YEAR">2학년</option>
+            <option value="THIRD_YEAR">3학년</option>
+            <option value="FOURTH_YEAR_OR_ABOVE">4+ 학년</option>
+          </select>
         </label>
       </div>
 

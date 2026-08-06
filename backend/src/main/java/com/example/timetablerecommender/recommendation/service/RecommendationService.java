@@ -30,6 +30,7 @@ import com.example.timetablerecommender.recommendation.engine.RecommendationCrit
 import com.example.timetablerecommender.recommendation.engine.RecommendationEngine;
 import com.example.timetablerecommender.recommendation.engine.RecommendedTimetable;
 import com.example.timetablerecommender.recommendation.engine.SectionCandidate;
+import com.example.timetablerecommender.recommendation.engine.StudentYear;
 import com.example.timetablerecommender.repository.AppUserRepository;
 import com.example.timetablerecommender.repository.CompletedCourseRepository;
 import com.example.timetablerecommender.repository.CourseInterestAreaRepository;
@@ -77,6 +78,7 @@ public class RecommendationService {
     public RecommendationResponse recommend(
             Long userId,
             int targetCourseCount,
+            StudentYear studentYear,
             List<Long> interestedIds,
             List<Long> uninterestedIds) {
         if (!userRepository.existsById(userId)) {
@@ -89,7 +91,7 @@ public class RecommendationService {
 
         List<Course> courses = courseRepository.findRecommendationCandidates(userId);
         if (courses.isEmpty()) {
-            return new RecommendationResponse(userId, targetCourseCount, null);
+            return new RecommendationResponse(userId, targetCourseCount, studentYear, null);
         }
 
         List<Long> courseIds = courses.stream().map(Course::getId).toList();
@@ -109,6 +111,7 @@ public class RecommendationService {
                 .toList();
         RecommendationCriteria criteria = new RecommendationCriteria(
                 targetCourseCount,
+                studentYear,
                 interestedAreaIds,
                 uninterestedAreaIds,
                 completedCourseRepository.findCourseCodesByUserId(userId));
@@ -116,7 +119,7 @@ public class RecommendationService {
                 .findFirst()
                 .map(this::toResponse)
                 .orElse(null);
-        return new RecommendationResponse(userId, targetCourseCount, timetable);
+        return new RecommendationResponse(userId, targetCourseCount, studentYear, timetable);
     }
 
     private Set<Long> distinct(List<Long> ids) {

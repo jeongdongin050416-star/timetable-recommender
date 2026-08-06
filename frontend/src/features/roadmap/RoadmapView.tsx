@@ -1,9 +1,7 @@
-import { useId, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type {
   CourseSummary,
-  RoadmapEdge,
   RoadmapLayout,
-  RoadmapNode,
 } from '../../types'
 import layoutData from './roadmap-layout.json'
 import './RoadmapView.css'
@@ -30,59 +28,6 @@ export interface RoadmapViewProps {
   layout?: RoadmapLayout
 }
 
-interface Point {
-  x: number
-  y: number
-}
-
-function getNodeCenter(node: RoadmapNode): Point {
-  return {
-    x: node.x + node.width / 2,
-    y: node.y + node.height / 2,
-  }
-}
-
-function getBoundaryPoint(node: RoadmapNode, toward: Point): Point {
-  const center = getNodeCenter(node)
-  const dx = toward.x - center.x
-  const dy = toward.y - center.y
-
-  if (dx === 0 && dy === 0) {
-    return center
-  }
-
-  const horizontalScale = dx === 0 ? Number.POSITIVE_INFINITY : node.width / 2 / Math.abs(dx)
-  const verticalScale = dy === 0 ? Number.POSITIVE_INFINITY : node.height / 2 / Math.abs(dy)
-  const scale = Math.min(horizontalScale, verticalScale)
-
-  return {
-    x: center.x + dx * scale,
-    y: center.y + dy * scale,
-  }
-}
-
-function getEdgePath(edge: RoadmapEdge, nodeByCode: Map<string, RoadmapNode>) {
-  const fromNode = nodeByCode.get(edge.from)
-  const toNode = nodeByCode.get(edge.to)
-  if (!fromNode || !toNode) {
-    return null
-  }
-
-  const fromCenter = getNodeCenter(fromNode)
-  const toCenter = getNodeCenter(toNode)
-  const start = getBoundaryPoint(fromNode, toCenter)
-  const end = getBoundaryPoint(toNode, fromCenter)
-  const isMostlyHorizontal = Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)
-
-  if (isMostlyHorizontal) {
-    const middleX = (start.x + end.x) / 2
-    return `M ${start.x} ${start.y} C ${middleX} ${start.y}, ${middleX} ${end.y}, ${end.x} ${end.y}`
-  }
-
-  const middleY = (start.y + end.y) / 2
-  return `M ${start.x} ${start.y} C ${start.x} ${middleY}, ${end.x} ${middleY}, ${end.x} ${end.y}`
-}
-
 export function RoadmapView({
   courses,
   completedCourseCodes,
@@ -92,17 +37,12 @@ export function RoadmapView({
   onToggleCourse,
   layout = defaultLayout,
 }: RoadmapViewProps) {
-  const markerPrefix = `roadmap-${useId().replaceAll(':', '')}`
   const [query, setQuery] = useState('')
   const normalizedQuery = query.trim().toLocaleLowerCase()
 
   const courseByCode = useMemo(
     () => new Map(courses.map((course) => [course.courseCode, course])),
     [courses],
-  )
-  const nodeByCode = useMemo(
-    () => new Map(layout.nodes.map((node) => [node.courseCode, node])),
-    [layout.nodes],
   )
   const completedCourses = useMemo(
     () => courses.filter((course) => completedCourseCodes.has(course.courseCode)),
@@ -140,7 +80,6 @@ export function RoadmapView({
         <div className="roadmap-view__legend" aria-label="로드맵 범례">
           <span><i className="roadmap-view__swatch roadmap-view__swatch--completed" /> 이수 완료</span>
           <span><i className="roadmap-view__swatch roadmap-view__swatch--recommended" /> 추천 과목</span>
-          <span><i className="roadmap-view__line roadmap-view__line--dashed" /> 권장 이수 관계</span>
         </div>
       </header>
 
@@ -189,36 +128,6 @@ export function RoadmapView({
               </div>
             ))}
           </div>
-
-          <svg
-            className="roadmap-view__edges"
-            width={canvasSize.width}
-            height={canvasSize.height}
-            viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`}
-            aria-hidden="true"
-          >
-            <defs>
-              <marker id={`${markerPrefix}-prerequisite`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" className="roadmap-edge-marker" />
-              </marker>
-              <marker id={`${markerPrefix}-recommended`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" className="roadmap-edge-marker roadmap-edge-marker--recommended" />
-              </marker>
-            </defs>
-            {layout.edges.map((edge, index) => {
-              const path = getEdgePath(edge, nodeByCode)
-              if (!path) return null
-              const isRecommendedRelation = edge.relationType === 'RECOMMENDED'
-              return (
-                <path
-                  key={`${edge.from}-${edge.to}-${index}`}
-                  d={path}
-                  className={`roadmap-edge${isRecommendedRelation ? ' roadmap-edge--recommended' : ''}`}
-                  markerEnd={`url(#${markerPrefix}-${isRecommendedRelation ? 'recommended' : 'prerequisite'})`}
-                />
-              )
-            })}
-          </svg>
 
           <div className="roadmap-view__nodes">
             {layout.nodes.map((node) => {

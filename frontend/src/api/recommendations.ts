@@ -5,6 +5,7 @@ export const recommendationsApi = {
   get: (params: RecommendationParams, signal?: AbortSignal) => {
     const query = new URLSearchParams({
       targetCourseCount: String(params.targetCourseCount),
+      studentYear: params.studentYear,
     })
 
     if (params.interestedAreaIds?.length) {

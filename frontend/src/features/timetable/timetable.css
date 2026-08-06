@@ -111,7 +111,8 @@
   font-weight: 700;
 }
 
-.recommendation-form input {
+.recommendation-form input,
+.recommendation-form select {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
@@ -124,12 +125,14 @@
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
-.recommendation-form input:focus {
+.recommendation-form input:focus,
+.recommendation-form select:focus {
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgb(99 102 241 / 15%);
 }
 
-.recommendation-form input:disabled {
+.recommendation-form input:disabled,
+.recommendation-form select:disabled {
   color: #94a3b8;
   background: #f8fafc;
 }

@@ -249,10 +249,12 @@ class ApiIntegrationTest {
 
         mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "2")
+                        .param("studentYear", "THIRD_YEAR")
                         .param("interestedAreaIds", theory.getId().toString())
                         .param("uninterestedAreaIds", security.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.targetCourseCount").value(2))
+                .andExpect(jsonPath("$.data.studentYear").value("THIRD_YEAR"))
                 .andExpect(jsonPath("$.data.timetable.score").value(70))
                 .andExpect(jsonPath("$.data.timetable.courseCount").value(2))
                 .andExpect(jsonPath("$.data.timetable.courses.length()").value(2))
@@ -267,18 +269,26 @@ class ApiIntegrationTest {
         InterestArea theory = interestAreaRepository.findByName("THEORY").orElseThrow();
 
         mockMvc.perform(get("/api/recommended-timetables").session(session)
-                        .param("targetCourseCount", "0"))
+                        .param("targetCourseCount", "0")
+                        .param("studentYear", "FIRST_YEAR"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.error.fieldErrors.targetCourseCount").exists());
         mockMvc.perform(get("/api/recommended-timetables").session(session)
-                        .param("targetCourseCount", "21"))
+                        .param("targetCourseCount", "21")
+                        .param("studentYear", "FOURTH_YEAR_OR_ABOVE"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "1")
+                        .param("studentYear", "SECOND_YEAR")
                         .param("interestedAreaIds", "999999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("INTEREST_AREA_NOT_FOUND"));
+        mockMvc.perform(get("/api/recommended-timetables").session(session)
+                        .param("targetCourseCount", "1")
+                        .param("studentYear", "FIFTH_YEAR"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
     }
 
     @Test

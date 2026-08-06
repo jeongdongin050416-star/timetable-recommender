@@ -11,6 +11,7 @@ export type {
   MeetingTime,
   RecommendationParams,
   RecommendationResult,
+  StudentYear,
   Timetable,
   TimetableCourse,
 } from './recommendation'
