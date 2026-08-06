@@ -6,12 +6,12 @@ import java.util.regex.Pattern;
 
 public final class TimetableScorer {
 
-    static final int INTERESTED_COURSE_SCORE = 2;
-    static final int UNINTERESTED_COURSE_SCORE = -2;
-    static final int MAJOR_REQUIRED_SCORE = 5;
-    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 3;
-    static final int RECOMMENDED_PREREQUISITE_UNMET_SCORE = 0;
-    static final int PREREQUISITE_MET_SCORE = 3;
+    static final int INTERESTED_COURSE_SCORE = 1;
+    static final int UNINTERESTED_COURSE_SCORE = -1;
+    static final int MAJOR_REQUIRED_SCORE = 10;
+    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 0;
+    static final int RECOMMENDED_PREREQUISITE_UNMET_SCORE = -1;
+    static final int PREREQUISITE_MET_SCORE = 0;
     static final int PREREQUISITE_UNMET_SCORE = -3;
     private static final Pattern COURSE_NUMBER_PATTERN = Pattern.compile("(?:^|\\D)(\\d{3})$");
 
@@ -28,7 +28,7 @@ public final class TimetableScorer {
             if (course.majorRequired()) {
                 score += MAJOR_REQUIRED_SCORE;
             }
-            score += studentYearScore(course.courseCode(), criteria.studentYear());
+            score += studentYearScore(course, criteria.studentYear());
             for (String prerequisite : course.recommendedPrerequisiteCodes()) {
                 score += criteria.completedCourseCodes().contains(prerequisite)
                         ? RECOMMENDED_PREREQUISITE_MET_SCORE
@@ -43,8 +43,12 @@ public final class TimetableScorer {
         return score;
     }
 
-    private int studentYearScore(String courseCode, StudentYear studentYear) {
-        Matcher matcher = COURSE_NUMBER_PATTERN.matcher(courseCode);
+    private int studentYearScore(CourseCandidate course, StudentYear studentYear) {
+        if (studentYear == StudentYear.FOURTH_YEAR_OR_ABOVE
+                && (course.majorRequired() || "CS101".equals(course.courseCode()))) {
+            return 30;
+        }
+        Matcher matcher = COURSE_NUMBER_PATTERN.matcher(course.courseCode());
         if (!matcher.find()) {
             return 0;
         }
@@ -52,24 +56,23 @@ public final class TimetableScorer {
         int courseLevel = Integer.parseInt(matcher.group(1)) / 100;
         return switch (studentYear) {
             case FIRST_YEAR -> switch (courseLevel) {
-                case 1 -> 15;
-                case 2 -> 10;
+                case 1 -> 35;
+                case 2 -> 20;
                 default -> 0;
             };
             case SECOND_YEAR -> switch (courseLevel) {
-                case 2 -> 15;
-                case 3 -> 10;
+                case 2 -> 35;
+                case 3 -> 20;
                 default -> 0;
             };
             case THIRD_YEAR -> switch (courseLevel) {
-                case 2 -> 10;
-                case 3 -> 15;
-                case 4 -> 5;
+                case 2 -> 25;
+                case 3 -> 35;
+                case 4 -> 15;
                 default -> 0;
             };
             case FOURTH_YEAR_OR_ABOVE -> switch (courseLevel) {
-                case 3 -> 14;
-                case 4 -> 15;
+                case 3, 4 -> 20;
                 default -> 0;
             };
         };

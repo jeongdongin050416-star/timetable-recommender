@@ -3,6 +3,7 @@ package com.example.timetablerecommender.recommendation.engine;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import com.example.timetablerecommender.recommendation.conflict.MeetingTime;
 import com.example.timetablerecommender.recommendation.conflict.MeetingTimeConflictChecker;
@@ -27,6 +28,7 @@ public final class RecommendationEngine {
             java.util.Collection<CourseCandidate> inputCandidates,
             RecommendationCriteria criteria) {
         List<CourseCandidate> candidates = inputCandidates.stream()
+                .filter(candidate -> isEligibleByCompletion(candidate, criteria))
                 .sorted(Comparator.comparing(CourseCandidate::courseCode))
                 .toList();
         List<RecommendedTimetable> results = new ArrayList<>();
@@ -38,6 +40,13 @@ public final class RecommendationEngine {
                         .thenComparing(this::sectionKey))
                 .limit(MAX_RESULTS)
                 .toList();
+    }
+
+    private boolean isEligibleByCompletion(CourseCandidate candidate, RecommendationCriteria criteria) {
+        Set<String> completed = criteria.completedCourseCodes();
+        return !("MAS110".equals(candidate.courseCode()) && completed.contains("MAS109"))
+                && !("MAS109".equals(candidate.courseCode()) && completed.contains("MAS110"))
+                && !("CS109".equals(candidate.courseCode()) && completed.contains("CS206"));
     }
 
     private void search(
