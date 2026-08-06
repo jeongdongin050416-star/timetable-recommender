@@ -93,9 +93,9 @@ class RecommendationEngineTest {
 
         List<RecommendedTimetable> results = engine.recommend(List.of(first, second), criteria);
 
-        // +30 interested, -15 uninterested, +20 major, +15 recommended met, +0 recommended unmet,
+        // +2 interested, -2 uninterested, +5 major, +3 recommended met, +0 recommended unmet,
         // +15 first-year 100-level, +10 first-year 200-level.
-        assertThat(results).singleElement().extracting(RecommendedTimetable::score).isEqualTo(75);
+        assertThat(results).singleElement().extracting(RecommendedTimetable::score).isEqualTo(33);
     }
 
     @Test
@@ -134,9 +134,9 @@ class RecommendationEngineTest {
         RecommendationCriteria criteria = new RecommendationCriteria(
                 1, StudentYear.FIRST_YEAR, Set.of(), Set.of(), Set.of("REC_MET", "REQ_MET"));
 
-        // Recommended: +15 +0, prerequisite: +20 -20.
+        // Recommended: +3 +0, prerequisite: +3 -3.
         assertThat(engine.recommend(List.of(candidate), criteria))
-                .singleElement().extracting(RecommendedTimetable::score).isEqualTo(15);
+                .singleElement().extracting(RecommendedTimetable::score).isEqualTo(3);
     }
 
     @Test

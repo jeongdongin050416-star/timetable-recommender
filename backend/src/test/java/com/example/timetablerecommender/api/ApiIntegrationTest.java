@@ -255,7 +255,7 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.targetCourseCount").value(2))
                 .andExpect(jsonPath("$.data.studentYear").value("THIRD_YEAR"))
-                .andExpect(jsonPath("$.data.timetable.score").value(95))
+                .andExpect(jsonPath("$.data.timetable.score").value(35))
                 .andExpect(jsonPath("$.data.timetable.courseCount").value(2))
                 .andExpect(jsonPath("$.data.timetable.courses.length()").value(2))
                 .andExpect(jsonPath("$.data.timetable.courses[0].courseCode").value("CS200"))

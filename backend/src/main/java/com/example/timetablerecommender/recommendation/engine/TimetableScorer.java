@@ -6,13 +6,13 @@ import java.util.regex.Pattern;
 
 public final class TimetableScorer {
 
-    static final int INTERESTED_COURSE_SCORE = 30;
-    static final int UNINTERESTED_COURSE_SCORE = -15;
-    static final int MAJOR_REQUIRED_SCORE = 20;
-    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 15;
+    static final int INTERESTED_COURSE_SCORE = 2;
+    static final int UNINTERESTED_COURSE_SCORE = -2;
+    static final int MAJOR_REQUIRED_SCORE = 5;
+    static final int RECOMMENDED_PREREQUISITE_MET_SCORE = 3;
     static final int RECOMMENDED_PREREQUISITE_UNMET_SCORE = 0;
-    static final int PREREQUISITE_MET_SCORE = 20;
-    static final int PREREQUISITE_UNMET_SCORE = -20;
+    static final int PREREQUISITE_MET_SCORE = 3;
+    static final int PREREQUISITE_UNMET_SCORE = -3;
     private static final Pattern COURSE_NUMBER_PATTERN = Pattern.compile("(?:^|\\D)(\\d{3})$");
 
     public int score(List<TimetableSelection> selections, RecommendationCriteria criteria) {
