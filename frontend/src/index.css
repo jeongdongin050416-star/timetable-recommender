@@ -63,6 +63,21 @@ input {
   font-weight: 700;
 }
 
+.app-header__account { display: flex; align-items: center; gap: 8px; }
+.app-header__account button, .auth-card button { border: 0; cursor: pointer; font-weight: 800; }
+.app-header__account button { padding: 7px 10px; border-radius: 8px; color: #475569; background: #e9eef5; }
+
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(145deg, #eff6ff, #f8fafc); }
+.auth-card { width: min(420px, 100%); display: grid; gap: 16px; padding: 36px; border: 1px solid #dbe4f0; border-radius: 20px; background: #fff; box-shadow: 0 20px 50px rgb(15 23 42 / 10%); }
+.auth-card h1, .auth-card p { margin: 0; }
+.auth-card p { color: #64748b; }
+.auth-card label { display: grid; gap: 7px; color: #334155; font-size: .86rem; font-weight: 800; }
+.auth-card input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 9px; }
+.auth-card input:focus { outline: 3px solid rgb(37 99 235 / 18%); border-color: #2563eb; }
+.auth-card__submit { padding: 13px; border-radius: 9px; color: #fff; background: #1d4ed8; }
+.auth-card__submit:disabled { opacity: .6; cursor: wait; }
+.auth-card__switch { color: #1d4ed8; background: transparent; }
+
 .app-tabs {
   display: flex;
   gap: 6px;

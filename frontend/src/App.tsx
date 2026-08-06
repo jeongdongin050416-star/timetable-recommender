@@ -6,8 +6,9 @@ import {
 } from './features/completedCourses'
 import { TimetablePage } from './features/timetable'
 import type { CourseSummary, Timetable } from './types'
-
-const CURRENT_USER_ID = 1
+import { AuthPage } from './auth/AuthPage'
+import { ProtectedRoute } from './auth/ProtectedRoute'
+import { useAuth } from './auth/AuthProvider'
 
 type AppTab = 'recommendation' | 'roadmap'
 
@@ -21,7 +22,8 @@ function getCoursesErrorMessage(error: unknown) {
   return `전체 과목 조회에 실패했습니다. ${error.message} (${error.code})`
 }
 
-function App() {
+function Planner() {
+  const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState<AppTab>('roadmap')
   const [courses, setCourses] = useState<CourseSummary[]>([])
   const [coursesLoading, setCoursesLoading] = useState(true)
@@ -32,10 +34,7 @@ function App() {
   const markRecommendationStale = useCallback(() => {
     setIsRecommendationStale((current) => current || recommendedTimetable !== null)
   }, [recommendedTimetable])
-  const completedCourses = useCompletedCourses(
-    CURRENT_USER_ID,
-    markRecommendationStale,
-  )
+  const completedCourses = useCompletedCourses(markRecommendationStale)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -75,7 +74,10 @@ function App() {
           <span className="app-header__brand">KAIST COURSE PLANNER</span>
           <strong>전산학부 학업 설계</strong>
         </div>
-        <span className="app-header__user">사용자 #{CURRENT_USER_ID}</span>
+        <div className="app-header__account">
+          <span className="app-header__user">{user?.name}</span>
+          <button type="button" onClick={() => void logout()}>로그아웃</button>
+        </div>
       </header>
 
       <nav className="app-tabs" aria-label="주요 화면">
@@ -108,13 +110,16 @@ function App() {
 
       <div hidden={activeTab !== 'recommendation'}>
         <TimetablePage
-          userId={CURRENT_USER_ID}
           isRecommendationStale={isRecommendationStale}
           onRecommendationChange={updateRecommendation}
         />
       </div>
     </div>
   )
+}
+
+function App() {
+  return <ProtectedRoute fallback={<AuthPage />}><Planner /></ProtectedRoute>
 }
 
 export default App

@@ -17,6 +17,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import com.example.timetablerecommender.auth.security.SessionUser;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -93,7 +98,7 @@ class ApiIntegrationTest {
 
     @Test
     void signupHashesPasswordAndLoginReturnsNoPassword() throws Exception {
-        mockMvc.perform(post("/api/auth/signup")
+        var signupResult = mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"email":"User@Example.com","password":"password123!","name":"홍길동"}
@@ -102,11 +107,17 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.email").value("user@example.com"))
                 .andExpect(jsonPath("$.data.password").doesNotExist())
-                .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
+                .andReturn();
 
         AppUser saved = userRepository.findByLoginId("user@example.com").orElseThrow();
         assertThat(saved.getPasswordHash()).isNotEqualTo("password123!");
         assertThat(passwordEncoder.matches("password123!", saved.getPasswordHash())).isTrue();
+        MockHttpSession signupSession = (MockHttpSession) signupResult.getRequest().getSession(false);
+        assertThat(signupSession).isNotNull();
+        mockMvc.perform(get("/api/me").session(signupSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(saved.getId()));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -150,34 +161,37 @@ class ApiIntegrationTest {
     @Test
     void completedCoursesAreSortedAndPutDeleteAreIdempotent() throws Exception {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
+        MockHttpSession session = authenticatedSession(user);
         Course later = courseRepository.save(new Course("CS200", "나중 과목", 3, "MAJOR_ELECTIVE"));
         Course earlier = courseRepository.save(new Course("CS100", "먼저 과목", 3, "MAJOR_REQUIRED"));
 
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
+        mockMvc.perform(put("/api/completed-courses/{courseCode}", later.getCourseCode()).session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courseCode").value("CS200"))
                 .andExpect(jsonPath("$.data.completed").value(true));
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
+        mockMvc.perform(put("/api/completed-courses/{courseCode}", later.getCourseCode()).session(session))
                 .andExpect(status().isOk());
         completedCourseRepository.save(new CompletedCourse(user, earlier));
         assertThat(completedCourseRepository.count()).isEqualTo(2);
 
-        mockMvc.perform(get("/api/users/{userId}/completed-courses", user.getId()))
+        mockMvc.perform(get("/api/completed-courses").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courses[0].courseCode").value("CS100"))
                 .andExpect(jsonPath("$.data.courses[1].courseCode").value("CS200"));
 
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
+        mockMvc.perform(delete("/api/completed-courses/{courseCode}", later.getCourseCode()).session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.completed").value(false));
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), later.getCourseCode()))
+        mockMvc.perform(delete("/api/completed-courses/{courseCode}", later.getCourseCode()).session(session))
                 .andExpect(status().isOk());
         assertThat(completedCourseRepository.existsByUserIdAndCourseId(user.getId(), later.getId())).isFalse();
     }
 
     @Test
     void coursesAreReturnedAsSortedDtosAndMayBeEmpty() throws Exception {
-        mockMvc.perform(get("/api/courses"))
+        AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
+        MockHttpSession session = authenticatedSession(user);
+        mockMvc.perform(get("/api/courses").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.courses").isEmpty())
@@ -186,7 +200,7 @@ class ApiIntegrationTest {
         courseRepository.save(new Course("CS300", "알고리즘 개론", 3, "MAJOR_REQUIRED"));
         courseRepository.save(new Course("CS101", "프로그래밍 기초", 2, "BASIC_REQUIRED"));
 
-        mockMvc.perform(get("/api/courses"))
+        mockMvc.perform(get("/api/courses").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courses.length()").value(2))
                 .andExpect(jsonPath("$.data.courses[0].courseCode").value("CS101"))
@@ -200,18 +214,13 @@ class ApiIntegrationTest {
     @Test
     void completedCourseEndpointsReturnNotFoundAndEmptyList() throws Exception {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
+        MockHttpSession session = authenticatedSession(user);
         Course course = courseRepository.save(new Course("CS100", "과목", 3, "MAJOR_REQUIRED"));
 
-        mockMvc.perform(get("/api/users/{userId}/completed-courses", user.getId()))
+        mockMvc.perform(get("/api/completed-courses").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.courses").isEmpty());
-        mockMvc.perform(get("/api/users/{userId}/completed-courses", 999999L))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
-        mockMvc.perform(put("/api/users/{userId}/completed-courses/{courseCode}", 999999L, course.getCourseCode()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
-        mockMvc.perform(delete("/api/users/{userId}/completed-courses/{courseCode}", user.getId(), "UNKNOWN"))
+        mockMvc.perform(delete("/api/completed-courses/{courseCode}", "UNKNOWN").session(session))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("COURSE_NOT_FOUND"));
     }
@@ -219,6 +228,7 @@ class ApiIntegrationTest {
     @Test
     void recommendationAppliesCompletionAreasPrerequisitesScoresAndLimit() throws Exception {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
+        MockHttpSession session = authenticatedSession(user);
         InterestArea theory = interestAreaRepository.findByName("THEORY").orElseThrow();
         InterestArea security = interestAreaRepository.findByName("SECURE_COMPUTING").orElseThrow();
         Course completed = courseRepository.save(new Course("CS100", "이수", 3, "MAJOR_REQUIRED"));
@@ -237,7 +247,7 @@ class ApiIntegrationTest {
         addSection(excluded, "A", DayOfWeek.WEDNESDAY, "09:00", "10:00");
         addSection(unmet, "A", DayOfWeek.THURSDAY, "09:00", "10:00");
 
-        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+        mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "2")
                         .param("interestedAreaIds", theory.getId().toString())
                         .param("uninterestedAreaIds", security.getId().toString()))
@@ -253,25 +263,48 @@ class ApiIntegrationTest {
     @Test
     void recommendationValidatesCountAreasAndUser() throws Exception {
         AppUser user = userRepository.save(new AppUser("user@example.com", "hash", "사용자"));
+        MockHttpSession session = authenticatedSession(user);
         InterestArea theory = interestAreaRepository.findByName("THEORY").orElseThrow();
 
-        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+        mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.error.fieldErrors.targetCourseCount").exists());
-        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+        mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "21"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", user.getId())
+        mockMvc.perform(get("/api/recommended-timetables").session(session)
                         .param("targetCourseCount", "1")
                         .param("interestedAreaIds", "999999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error.code").value("INTEREST_AREA_NOT_FOUND"));
-        mockMvc.perform(get("/api/users/{userId}/recommended-timetables", 999999L)
-                        .param("targetCourseCount", "1"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"));
+    }
+
+    @Test
+    void protectedApisRequireSessionAndLogoutInvalidatesIt() throws Exception {
+        mockMvc.perform(get("/api/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
+        mockMvc.perform(get("/api/completed-courses"))
+                .andExpect(status().isUnauthorized());
+
+        AppUser user = userRepository.save(new AppUser(
+                "user@example.com", passwordEncoder.encode("password123!"), "사용자"));
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"user@example.com\",\"password\":\"password123!\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(get("/api/me").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(user.getId()));
+        mockMvc.perform(post("/api/auth/logout").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/me").session(session))
+                .andExpect(status().isUnauthorized());
     }
 
     private void assertInvalidCredentials(String email, String password) throws Exception {
@@ -292,5 +325,15 @@ class ApiIntegrationTest {
                 new CourseSection(course, 2026, "FALL", sectionNumber));
         sectionTimeRepository.save(new SectionTime(
                 section, day, LocalTime.parse(start), LocalTime.parse(end)));
+    }
+
+    private MockHttpSession authenticatedSession(AppUser user) {
+        var principal = new SessionUser(user.getId(), user.getLoginId(), user.getName());
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(principal, null, java.util.List.of());
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        return session;
     }
 }

@@ -9,7 +9,6 @@ import { getTimetableProblem, TimetableGrid } from './TimetableGrid'
 import './timetable.css'
 
 interface TimetablePageProps {
-  userId: number
   isRecommendationStale: boolean
   onRecommendationChange: (timetable: Timetable | null) => void
 }
@@ -23,7 +22,6 @@ type PageState =
   | { status: 'error'; code: string; message: string; isNetworkError: boolean }
 
 export function TimetablePage({
-  userId,
   isRecommendationStale,
   onRecommendationChange,
 }: TimetablePageProps) {
@@ -46,7 +44,7 @@ export function TimetablePage({
     setState({ status: 'loading' })
 
     try {
-      const result = await recommendationsApi.get(userId, params, controller.signal)
+      const result = await recommendationsApi.get(params, controller.signal)
       if (controller.signal.aborted) {
         return
       }
@@ -99,7 +97,7 @@ export function TimetablePage({
       <header className="timetable-page__intro">
         <p className="timetable-page__eyebrow">TIMETABLE RECOMMENDER</p>
         <h1>나에게 맞는 시간표 찾기</h1>
-        <p>사용자 #{userId}의 이수 과목과 관심 분야를 바탕으로 충돌 없는 과목 조합을 추천합니다.</p>
+        <p>이수 과목과 관심 분야를 바탕으로 충돌 없는 과목 조합을 추천합니다.</p>
       </header>
 
       <section className="recommendation-panel" aria-labelledby="condition-title">

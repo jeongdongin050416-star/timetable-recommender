@@ -43,7 +43,6 @@ function getMutationErrorMessage(error: unknown, isAdding: boolean) {
 }
 
 export function useCompletedCourses(
-  userId: number,
   onCourseChanged?: () => void,
 ): UseCompletedCoursesResult {
   const [completedCourseCodes, setCompletedCourseCodes] = useState<Set<string>>(() => new Set())
@@ -72,7 +71,7 @@ export function useCompletedCourses(
     setError(null)
     setToggleError(null)
 
-    completedCoursesApi.getAll(userId)
+    completedCoursesApi.getAll()
       .then(({ courses }) => {
         if (!isCurrent || !mountedRef.current) return
         const codes = new Set(courses.map(({ courseCode }) => courseCode))
@@ -91,7 +90,7 @@ export function useCompletedCourses(
     return () => {
       isCurrent = false
     }
-  }, [userId])
+  }, [])
 
   const mutateCourse = useCallback(async (courseCode: string, shouldComplete: boolean) => {
     if (isLoading || pendingRef.current.has(courseCode)) return false
@@ -112,8 +111,8 @@ export function useCompletedCourses(
     }
 
     try {
-      if (shouldComplete) await completedCoursesApi.add(userId, courseCode)
-      else await completedCoursesApi.remove(userId, courseCode)
+      if (shouldComplete) await completedCoursesApi.add(courseCode)
+      else await completedCoursesApi.remove(courseCode)
       if (mountedRef.current) onCourseChanged?.()
       return true
     } catch (requestError) {
@@ -132,7 +131,7 @@ export function useCompletedCourses(
       pendingRef.current = nextPending
       if (mountedRef.current) setPendingCourseCodes(nextPending)
     }
-  }, [isLoading, onCourseChanged, userId])
+  }, [isLoading, onCourseChanged])
 
   const addCourse = useCallback(
     (courseCode: string) => mutateCourse(courseCode, true),
