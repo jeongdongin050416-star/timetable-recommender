@@ -62,7 +62,8 @@ public class AuthController {
             request.changeSessionId();
         }
         SessionUser principal = authService.loadSessionUser(response.userId());
-        var authentication = UsernamePasswordAuthenticationToken.authenticated(principal, null, java.util.List.of());
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+                principal, null, principal.authorities());
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

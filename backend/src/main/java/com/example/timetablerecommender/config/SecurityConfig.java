@@ -1,5 +1,6 @@
 package com.example.timetablerecommender.config;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -31,16 +32,26 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/health").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/api/**").hasRole("USER")
                         .anyRequest().permitAll())
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint((request, response, exception) -> {
-                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.setCharacterEncoding(java.nio.charset.StandardCharsets.UTF_8.name());
-                    response.getWriter().write("{\"success\":false,\"data\":null,\"error\":{" +
-                            "\"code\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\",\"fieldErrors\":null}}");
-                }))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) -> writeSecurityError(
+                                response, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증이 필요합니다."))
+                        .accessDeniedHandler((request, response, exception) -> writeSecurityError(
+                                response, HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다.")))
                 .build();
+    }
+
+    private void writeSecurityError(
+            jakarta.servlet.http.HttpServletResponse response,
+            HttpStatus status,
+            String code,
+            String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(java.nio.charset.StandardCharsets.UTF_8.name());
+        response.getWriter().write("{\"success\":false,\"data\":null,\"error\":{" +
+                "\"code\":\"" + code + "\",\"message\":\"" + message + "\",\"fieldErrors\":null}}");
     }
 
     @Bean
