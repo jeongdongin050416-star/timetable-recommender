@@ -102,6 +102,32 @@ curl -X POST "http://localhost:8080/api/auth/login" \
 {"success":false,"data":null,"error":{"code":"INVALID_CREDENTIALS","message":"이메일 또는 비밀번호가 올바르지 않습니다.","fieldErrors":null}}
 ```
 
+## 로그인 사용자 조회
+
+### `GET /api/me`
+
+- 인증: 필요
+- 성공: `200 OK`
+
+```bash
+curl -b cookie.txt "http://localhost:8080/api/me"
+```
+
+```json
+{"success":true,"data":{"userId":1,"email":"user@example.com","name":"홍길동"},"error":null}
+```
+
+## 로그아웃
+
+### `POST /api/auth/logout`
+
+- 인증: 필요
+- 성공: `200 OK`; 서버 세션과 보안 컨텍스트를 제거합니다.
+
+```bash
+curl -b cookie.txt -X POST "http://localhost:8080/api/auth/logout"
+```
+
 ## 전체 과목 목록
 
 ### `GET /api/courses`
@@ -121,43 +147,33 @@ curl -b cookie.txt "http://localhost:8080/api/courses"
 
 ## 이수 과목 목록
 
-### `GET /api/users/{userId}/completed-courses`
+### `GET /api/completed-courses`
 
-- Path: `userId` 사용자 ID
+- 사용자 ID는 로그인 세션에서 가져옵니다.
 - 성공: `200 OK`; 과목 코드 오름차순, 없으면 빈 배열
 - 실패: `404 USER_NOT_FOUND`
 - 멱등: 예
 
 ```bash
-curl "http://localhost:8080/api/users/1/completed-courses"
+curl -b cookie.txt "http://localhost:8080/api/completed-courses"
 ```
 
 ```json
 {"success":true,"data":{"userId":1,"courses":[{"courseCode":"CS101","name":"프로그래밍 기초","credits":3}]},"error":null}
 ```
 
-존재하지 않는 사용자:
-
-```bash
-curl "http://localhost:8080/api/users/999999/completed-courses"
-```
-
-```json
-{"success":false,"data":null,"error":{"code":"USER_NOT_FOUND","message":"사용자를 찾을 수 없습니다.","fieldErrors":null}}
-```
-
 ## 이수 과목 추가
 
-### `PUT /api/users/{userId}/completed-courses/{courseCode}`
+### `PUT /api/completed-courses/{courseCode}`
 
-- Path: `userId`, `courseCode`(예: `CS101`)
+- Path: `courseCode`(예: `CS101`)
 - 성공: 항상 `200 OK`
 - 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
 - 멱등: 예. 이미 등록된 관계는 추가하지 않으며 DB 유니크 제약도 중복을 방지합니다.
 
 ```bash
-curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
-curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -b cookie.txt -X PUT "http://localhost:8080/api/completed-courses/CS101"
+curl -b cookie.txt -X PUT "http://localhost:8080/api/completed-courses/CS101"
 ```
 
 ```json
@@ -166,16 +182,16 @@ curl -X PUT "http://localhost:8080/api/users/1/completed-courses/CS101"
 
 ## 이수 과목 삭제
 
-### `DELETE /api/users/{userId}/completed-courses/{courseCode}`
+### `DELETE /api/completed-courses/{courseCode}`
 
-- Path: `userId`, `courseCode`(예: `CS101`)
+- Path: `courseCode`(예: `CS101`)
 - 성공: 항상 `200 OK`
 - 실패: `404 USER_NOT_FOUND`, `404 COURSE_NOT_FOUND`
 - 멱등: 예. 관계가 없어도 성공합니다.
 
 ```bash
-curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
-curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
+curl -b cookie.txt -X DELETE "http://localhost:8080/api/completed-courses/CS101"
+curl -b cookie.txt -X DELETE "http://localhost:8080/api/completed-courses/CS101"
 ```
 
 ```json
@@ -184,10 +200,11 @@ curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
 
 ## 추천 시간표 조합
 
-### `GET /api/users/{userId}/recommended-timetables`
+### `GET /api/recommended-timetables`
 
-- Path: `userId`
 - Query: `targetCourseCount` 필수, 1~20. 각 시간표 조합에 포함할 정확한 과목 수
+- Query: `studentYear` 필수. `FIRST_YEAR`, `SECOND_YEAR`, `THIRD_YEAR`,
+  `FOURTH_YEAR_OR_ABOVE` 중 하나
 - Query: `interestedAreaIds`, `uninterestedAreaIds` 선택; 쉼표로 구분한 관심 분야 ID
 - 성공: `200 OK`; 정확한 과목 수로 만들 수 없으면 `timetable`을 `null`로 반환
 - 실패: `400 INVALID_REQUEST`, `404 USER_NOT_FOUND`, `404 INTEREST_AREA_NOT_FOUND`
@@ -196,15 +213,14 @@ curl -X DELETE "http://localhost:8080/api/users/1/completed-courses/CS101"
 이미 이수한 과목은 후보에서 제외합니다. DFS 백트래킹으로 서로 다른 과목마다 분반 하나를
 선택하며 모든 수업 시간이 충돌하지 않는 정확히 `targetCourseCount`개 과목의 조합을 만듭니다.
 점수가 가장 높은 시간표 조합 하나만 반환하며, 동점은 과목 코드와 분반 키 순으로 결정합니다.
+아래 응답은 필드 구조를 보여 주는 예시이며 실제 과목과 점수는 적재된 CSV 데이터와 요청
+조건에 따라 달라집니다.
 
-- 관심 분야에 속하는 과목: 과목당 `+30`
-- 미관심 분야에 속하는 과목: 과목당 `-15`
-- 전공필수: 과목당 `+20`
-- `RECOMMENDED` 선수 관계: 이수했으면 관계당 `+15`, 미이수면 `0`
-- `PREREQUISITE` 선수 관계: 이수했으면 관계당 `+20`, 미이수면 `-20`
+점수는 관심 분야, 미관심 분야, 전공필수, 학년별 과목 번호와 선수 관계를 합산합니다.
+정확한 현재 점수표는 [추천 기준](RECOMMENDATION.md)을 참고합니다.
 
 ```bash
-curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount=3&interestedAreaIds=1,2&uninterestedAreaIds=3"
+curl -b cookie.txt "http://localhost:8080/api/recommended-timetables?targetCourseCount=3&studentYear=THIRD_YEAR&interestedAreaIds=1,2&uninterestedAreaIds=3"
 ```
 
 ```json
@@ -213,6 +229,7 @@ curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount
   "data": {
     "userId": 1,
     "targetCourseCount": 3,
+    "studentYear": "THIRD_YEAR",
     "timetable": {
       "score": 69,
       "courseCount": 3,
@@ -238,8 +255,8 @@ curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount
           "name": "데이터베이스 개론",
           "credits": 3,
           "sectionKey": "CS360-2026-FALL-A",
-          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"09:00:00","endTime":"10:30:00"},
-            {"dayOfWeek":"WEDNESDAY","startTime":"09:00:00","endTime":"10:30:00"}]
+          "meetingTimes": [{"dayOfWeek":"MONDAY","startTime":"13:00:00","endTime":"14:30:00"},
+            {"dayOfWeek":"WEDNESDAY","startTime":"13:00:00","endTime":"14:30:00"}]
         }
       ]
     }
@@ -251,7 +268,7 @@ curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount
 유효성 검증 실패:
 
 ```bash
-curl "http://localhost:8080/api/users/1/recommended-timetables?targetCourseCount=0"
+curl -b cookie.txt "http://localhost:8080/api/recommended-timetables?targetCourseCount=0&studentYear=FIRST_YEAR"
 ```
 
 ```json
