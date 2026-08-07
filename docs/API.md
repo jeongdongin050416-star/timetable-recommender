@@ -1,7 +1,12 @@
 # 백엔드 API
 
-기본 주소는 `http://localhost:8080`이며 현재 모든 요청은 인증 없이 허용됩니다. 모든 성공과
-실패 응답은 다음 최상위 구조를 사용합니다.
+기본 주소는 `http://localhost:8080`입니다. 상태 확인, 회원가입, 로그인을 제외한 `/api/**`
+요청에는 로그인으로 발급된 `JSESSIONID` 쿠키가 필요합니다. 모든 성공과 실패 응답은 다음
+최상위 구조를 사용합니다.
+
+인증 쿠키가 없거나 만료되면 `401 UNAUTHORIZED`, 로그인은 되었지만 필요한 권한이 없으면
+`403 FORBIDDEN`을 반환합니다. 사용자 데이터 API는 URL이나 요청 본문의 사용자 ID를 신뢰하지
+않고 로그인 세션의 사용자 ID만 사용합니다.
 
 ```json
 {"success":true,"data":{},"error":null}
@@ -73,10 +78,10 @@ curl -X POST "http://localhost:8080/api/auth/signup" \
 - 성공: `200 OK`
 - 실패: `400 INVALID_REQUEST`, `401 INVALID_CREDENTIALS`
 - 이메일 미존재와 비밀번호 불일치는 같은 오류로 응답합니다.
-- JWT, 토큰, 세션, 쿠키는 발급하지 않고 자격 증명만 검증합니다.
+- 로그인 성공 시 서버 세션을 만들고 HttpOnly `JSESSIONID` 쿠키를 발급합니다.
 
 ```bash
-curl -X POST "http://localhost:8080/api/auth/login" \
+curl -c cookie.txt -X POST "http://localhost:8080/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123!"}'
 ```
@@ -107,7 +112,7 @@ curl -X POST "http://localhost:8080/api/auth/login" \
 - DB에 CSV import로 적재된 과목을 응답 DTO로 반환합니다.
 
 ```bash
-curl "http://localhost:8080/api/courses"
+curl -b cookie.txt "http://localhost:8080/api/courses"
 ```
 
 ```json

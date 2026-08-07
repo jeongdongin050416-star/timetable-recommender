@@ -298,6 +298,23 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
         mockMvc.perform(get("/api/completed-courses"))
                 .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/recommended-timetables")
+                        .param("targetCourseCount", "5")
+                        .param("studentYear", "FIRST_YEAR"))
+                .andExpect(status().isUnauthorized());
+
+        MockHttpSession sessionWithoutRole = new MockHttpSession();
+        var authenticationWithoutRole = UsernamePasswordAuthenticationToken.authenticated(
+                new SessionUser(1L, "user@example.com", "사용자"), null, java.util.List.of());
+        var contextWithoutRole = SecurityContextHolder.createEmptyContext();
+        contextWithoutRole.setAuthentication(authenticationWithoutRole);
+        sessionWithoutRole.setAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, contextWithoutRole);
+        mockMvc.perform(get("/api/courses").session(sessionWithoutRole))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
 
         AppUser user = userRepository.save(new AppUser(
                 "user@example.com", passwordEncoder.encode("password123!"), "사용자"));
@@ -315,6 +332,19 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/me").session(session))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void usersCanOnlyAccessTheirOwnCompletedCourses() throws Exception {
+        AppUser firstUser = userRepository.save(new AppUser("first@example.com", "hash", "첫 사용자"));
+        AppUser secondUser = userRepository.save(new AppUser("second@example.com", "hash", "둘째 사용자"));
+        Course course = courseRepository.save(new Course("CS100", "과목", 3, "MAJOR_REQUIRED"));
+        completedCourseRepository.save(new CompletedCourse(firstUser, course));
+
+        mockMvc.perform(get("/api/completed-courses").session(authenticatedSession(secondUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(secondUser.getId()))
+                .andExpect(jsonPath("$.data.courses").isEmpty());
     }
 
     private void assertInvalidCredentials(String email, String password) throws Exception {
@@ -339,7 +369,8 @@ class ApiIntegrationTest {
 
     private MockHttpSession authenticatedSession(AppUser user) {
         var principal = new SessionUser(user.getId(), user.getLoginId(), user.getName());
-        var authentication = UsernamePasswordAuthenticationToken.authenticated(principal, null, java.util.List.of());
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+                principal, null, principal.authorities());
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         MockHttpSession session = new MockHttpSession();
