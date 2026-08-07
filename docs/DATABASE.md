@@ -1,7 +1,8 @@
 # 데이터베이스 설계
 
-최초 스키마는
-`backend/src/main/resources/db/migration/V1__create_schema.sql`에서 관리합니다. Flyway는
+스키마 변경은 `backend/src/main/resources/db/migration`의 `V1`~`V3` SQL에서 관리합니다.
+`V1`은 최초 스키마, `V2`는 과목 대표 분야 추가와 AI 분야 이름 단축, `V3`는 함께 추천할 수 없는
+과목 관계를 추가합니다. Flyway는
 실행 여부를 `flyway_schema_history`에 기록하므로, 적용된 파일을 수정하지 않고 새로운
 버전의 마이그레이션을 추가해야 합니다.
 
@@ -34,6 +35,7 @@ course N ── N course              (course_prerequisite의 자기 참조 관�
 | `name` | NOT NULL | 과목명(예: 데이터베이스 개론) |
 | `credits` | NOT NULL, `> 0` | 학점 |
 | `course_type` | NOT NULL | 기초필수, 전공필수, 전공선택 등 |
+| `main_area` | NULL 허용 | CSV에 정의된 과목 대표 분야 |
 
 ### `completed_course`
 

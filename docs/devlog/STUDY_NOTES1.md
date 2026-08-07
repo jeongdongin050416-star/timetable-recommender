@@ -5,20 +5,22 @@
 
 ## 1. 프로젝트의 목표와 현재 상태
 
-이 프로젝트는 사용자의 이수 과목과 관심 분야를 바탕으로 시간 충돌 없는 시간표를 최대
-5개 추천하는 서비스이다.
+이 프로젝트는 사용자의 이수 과목, 관심 분야와 학년을 바탕으로 시간 충돌 없는 시간표를
+추천하는 서비스이다.
 
 현재 구현된 범위:
 
-- React·TypeScript·Vite 프론트엔드 기본 화면
+- React·TypeScript·Vite 기반 로그인, 로드맵과 주간 시간표 화면
 - Java 21·Spring Boot·Gradle 백엔드
 - `GET /api/health` 상태 확인 API
 - Docker Compose 기반 PostgreSQL
-- Flyway 최초 DB 스키마와 관심 분야 초기 데이터
+- Flyway 버전 마이그레이션과 CSV 기본 데이터 import
 - DB 테이블에 대응하는 JPA 엔티티
+- 세션 기반 회원가입·로그인·로그아웃과 `ROLE_USER` API 보호
+- 사용자별 이수 과목 관리와 추천 엔진
 
-앞으로 회원가입·로그인, 이수 과목 관리, 관심 분야 선택, 추천 알고리즘, 실제 시간표 UI를
-구현해야 한다.
+현재 추천 API는 최고 점수 시간표 하나를 반환한다. 관심 분야 영구 저장과 상위 시간표 최대
+5개 비교는 후속 범위이다.
 
 ## 2. 시스템 구성과 요청 흐름
 
@@ -145,17 +147,18 @@ Spring MVC가 연결된 health() 탐색
       ↓
 HealthController.health() 실행
       ↓
-Map.of("status", "ok") 반환
+ApiResponse.success(...) 반환
       ↓
-Spring이 Map을 JSON으로 변환
+Spring이 응답 DTO를 JSON으로 변환
       ↓
-{"status":"ok"}
+{"success":true,"data":{"status":"ok"},"error":null}
 ```
 
 `SecurityConfig`의 `@Configuration`은 Spring 설정 클래스임을 뜻하고 `@Bean`은
-메서드가 반환한 `SecurityFilterChain`을 Spring이 관리하도록 등록한다. 현재는 초기 개발
-단계라 CSRF 검사를 끄고 모든 요청을 로그인 여부와 관계없이 허용한다. 인증 구현 시
-반드시 제한해야 한다.
+메서드가 반환한 `SecurityFilterChain`을 Spring이 관리하도록 등록한다. 상태 확인,
+회원가입과 로그인만 공개하며 나머지 `/api/**`는 `ROLE_USER` 세션을 요구한다. 인증 실패와
+권한 부족은 각각 공통 JSON 형식의 401, 403 응답으로 처리한다. 브라우저 요청은 허용된
+CORS origin과 HttpOnly·SameSite 세션 쿠키를 사용한다.
 
 ## 8. Docker와 Docker Compose
 
@@ -305,7 +308,7 @@ course N ── N course              (course_prerequisite)
 - `InterestArea`: 관심 분야
 - `CourseInterestArea`: 과목과 관심 분야를 복합 키로 연결
 - `CoursePrerequisite`: 과목과 선수·권장 과목을 복합 키로 연결
-- `RelationType`: `PREREQUISITE` 또는 `RECOMMENDED`
+- `RelationType`: `PREREQUISITE`, `RECOMMENDED` 또는 `INCOMPATIBLE`
 
 DB는 양수 학점·연도, 올바른 요일, 시작 시간보다 늦은 종료 시간, 자기 자신이 아닌 선수
 과목 같은 CHECK 제약으로 잘못된 데이터도 막는다.
@@ -330,14 +333,16 @@ Flyway는 DB 구조 변경 내역을 코드처럼 버전 관리한다.
 - 시간 충돌 금지
 - 과목당 하나의 분반만 선택
 - 이수 과목 제외
-- 공식 선수 과목 충족
+- `INCOMPATIBLE` 관계 과목 동시 선택 금지
 - 목표 과목 수 만족
 
 소프트 제약 조건은 후보의 우선순위를 정한다.
 
 - 관심 분야 일치
 - 전공필수 우선
-- 공강 최소화
+- 미관심 분야 감점
+- 학년·과목 번호 가점
+- 선수·권장 과목 미이수 감점
 
 ## 15. Spring Boot를 사용하는 이유
 
@@ -359,10 +364,12 @@ Flyway는 DB 구조 변경 내역을 코드처럼 버전 관리한다.
 - `backend/settings.gradle`: Gradle 프로젝트 이름
 - `backend/build.gradle`: Java 버전, 플러그인과 의존성
 - `backend/src/main/resources/application.yml`: 서버·DB·JPA·Flyway 설정
-- `backend/src/main/resources/db/migration/V1__create_schema.sql`: 최초 DB 스키마
+- `backend/src/main/resources/db/migration/`: 버전별 DB 스키마 변경
 - `TimetableRecommenderApplication.java`: 백엔드 시작점
 - `SecurityConfig.java`: 현재 보안 필터 설정
+- `auth/`: 회원가입·로그인·세션 사용자 처리
 - `HealthController.java`: 상태 확인 API
+- `recommendation/`: 추천 조건, 점수 계산, 충돌 검사와 API
 - `domain/*.java`: DB 테이블에 대응하는 엔티티와 복합 키
 
 ## 17. Spring Boot 백엔드 구성

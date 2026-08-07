@@ -85,6 +85,7 @@ docker compose down -v
 | `DB_USERNAME` | `timetable` |
 | `DB_PASSWORD` | `timetable` |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173,http://127.0.0.1:5173` |
+| `SESSION_COOKIE_SECURE` | `false` |
 
 여러 프론트엔드 주소를 허용해야 하면 `CORS_ALLOWED_ORIGIN`에 쉼표로 구분해 입력합니다.
 
@@ -126,4 +127,5 @@ docker compose exec postgres psql -U timetable -d timetable -c \
 - [데이터베이스](docs/DATABASE.md)
 - [추천 기준](docs/RECOMMENDATION.md)
 - [작업 목록](docs/TASKS.md)
-- [통합 학습 노트](docs/devlog/STUDY_NOTES.md)
+- [통합 학습 노트](docs/devlog/STUDY_NOTES1.md)
+- [CSV import 학습 노트](docs/devlog/STUDY_NOTES2.md)
